@@ -91,6 +91,18 @@ EOF
   echo "Done! The Nginx server is up and running. Configuration can be found at /etc/nginx/sites-available/odoo"
 
 sudo add-apt-repository ppa:certbot/certbot -y && sudo apt-get update -y
-sudo apt-get install python3-certbot-nginx -y  
-sudo certbot --nginx -d $WEBSITE_NAME --noninteractive --agree-tos --email $ADMIN_EMAIL --redirect ; sudo service nginx reload
+sudo apt-get install python3-certbot-nginx -y
+if [ $WEBSITE_NAME == "localhost" ]
+then
+   echo "$WEBSITE_NAME is not valid for issueing SSL certificate"
+else
+    sudo certbot --nginx -d $WEBSITE_NAME --noninteractive --agree-tos --email $ADMIN_EMAIL --redirect ; sudo service nginx reload
+   echo "Success!!"
+   echo "A SSL certificate has been issued to $WEBSITE_NAME"
+fi
+
+
+echo "Now we can access odoo via $WEBSITE_NAME"
+
+
 
