@@ -6,6 +6,7 @@ echo "press CTRL+c is want to cancel installation"
 read -p 'Website Domain Name: ' WEBSITE_NAME
 read -p 'Website Admin Email: ' ADMIN_EMAIL
 
+sudo apt update && apt upgrade -y
 sudo apt -yq install postgresql
 
 echo "postgresql installation successfull"
@@ -21,7 +22,8 @@ wget -O - https://nightly.odoo.com/odoo.key | apt-key add -
 echo "deb http://nightly.odoo.com/15.0/nightly/deb/ ./" >> /etc/apt/sources.list.d/odoo.list
 sudo apt-get update && sudo apt-get -yq install odoo
 
-sudo pip3 install xlwt num2words 
+sudo apt install python3-pip -y
+sudo pip3 install xlwt num2words -y
 
 echo .
 echo .
