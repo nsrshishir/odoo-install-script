@@ -1,4 +1,4 @@
-echo "This Script is for Ubuntu 18.04 and Odoo 14.0 Community Edition"
+echo "This Script is for Ubuntu 20.04 and Odoo 14.0 Community Edition"
 
 echo "press CTRL+c is want to cancel installation"
 
@@ -21,7 +21,8 @@ wget -O - https://nightly.odoo.com/odoo.key | apt-key add -
 echo "deb http://nightly.odoo.com/14.0/nightly/deb/ ./" >> /etc/apt/sources.list.d/odoo.list
 sudo apt-get update && sudo apt-get -yq install odoo
 
-sudo pip3 install xlwt num2words 
+sudo apt install python3-pip -y
+sudo pip3 install xlwt num2words -y
 
 echo .
 echo .
@@ -30,8 +31,8 @@ echo .
 
 echo "Installing wkhtmltopdf"
 sudo mkdir /tmp
-sudo wget https://github.com/wkhtmltopdf/packaging/releases/download/0.12.6-1/wkhtmltox_0.12.6-1.bionic_amd64.deb -P /tmp
-sudo apt install /tmp/wkhtmltox_0.12.6-1.bionic_amd64.deb -y
+sudo wget https://github.com/wkhtmltopdf/packaging/releases/download/0.12.6-1/wkhtmltox_0.12.6-1.focal_amd64.deb -P /tmp
+sudo apt install /tmp/wkhtmltox_0.12.6-1.focal_amd64.deb -y
 
 echo .
 echo .
