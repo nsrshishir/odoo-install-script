@@ -6,6 +6,15 @@ echo "press CTRL+c is want to cancel installation"
 read -p 'Website Domain Name: ' WEBSITE_NAME
 read -p 'Website Admin Email: ' ADMIN_EMAIL
 
+echo .
+echo .
+echo .
+echo "Postgresql Installation Started"
+echo .
+echo .
+echo .
+
+sudo apt update && apt upgrade -y
 sudo apt -yq install postgresql
 
 echo "postgresql installation successfull"
