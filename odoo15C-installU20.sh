@@ -2,11 +2,28 @@ echo "This Script is for Ubuntu 20.04 and Odoo 15.0 Community Edition"
 
 echo "press CTRL+c is want to cancel installation"
 
+echo "Enter Domain Name 'localhost' if installing in local server"
 
 read -p 'Website Domain Name: ' WEBSITE_NAME
 read -p 'Website Admin Email: ' ADMIN_EMAIL
 
+echo .
+echo .
+echo .
+echo "Librery Upgrade Started"
+echo .
+echo .
+echo .
+
 sudo apt update && apt upgrade -y
+
+echo .
+echo .
+echo .
+echo "Postgresql Installation Started"
+echo .
+echo .
+echo .
 sudo apt -yq install postgresql
 
 echo "postgresql installation successfull"
@@ -18,8 +35,8 @@ echo .
 
 echo "Installing Odoo 15.0 Community Edition"
 
-wget -O - https://nightly.odoo.com/odoo.key | apt-key add -
-echo "deb http://nightly.odoo.com/15.0/nightly/deb/ ./" >> /etc/apt/sources.list.d/odoo.list
+sudo wget -O - https://nightly.odoo.com/odoo.key | apt-key add -
+sudo echo "deb http://nightly.odoo.com/15.0/nightly/deb/ ./" >> /etc/apt/sources.list.d/odoo.list
 sudo apt-get update && sudo apt-get -yq install odoo
 
 sudo apt install python3-pip -y
@@ -97,14 +114,19 @@ sudo apt-get install python3-certbot-nginx -y
 if [ $WEBSITE_NAME == "localhost" ]
 then
    echo "$WEBSITE_NAME is not valid for issueing SSL certificate"
+   echo .
+   echo .
+   echo .
+   echo "But we can access odoo via $WEBSITE_NAME:8069"
 else
     sudo certbot --nginx -d $WEBSITE_NAME --noninteractive --agree-tos --email $ADMIN_EMAIL --redirect ; sudo service nginx reload
    echo "Success!!"
    echo "A SSL certificate has been issued to $WEBSITE_NAME"
+   echo .
+   echo .
+   echo .
+   echo "Now we can access odoo via $WEBSITE_NAME"
 fi
-
-
-echo "Now we can access odoo via $WEBSITE_NAME"
 
 
 
