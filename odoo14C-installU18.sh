@@ -5,6 +5,24 @@ echo "Enter Domain Name 'localhost' if installing in local server"
 
 read -p 'Website Domain Name: ' WEBSITE_NAME
 read -p 'Website Admin Email: ' ADMIN_EMAIL
+echo .
+echo .
+echo .
+echo "Updating Server"
+echo .
+echo .
+echo .
+
+sudo apt update && sudo apt upgrade -y
+
+echo "Installing python3.8"
+echo .
+echo .
+echo .
+sudo apt install python3.8 python3.8-dev python3.8-dbg -y
+sudo update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.8
+sudo update-alternatives --config python3
+
 
 echo .
 echo .
@@ -13,8 +31,6 @@ echo "Postgresql Installation Started"
 echo .
 echo .
 echo .
-
-sudo apt update && apt upgrade -y
 sudo apt -yq install postgresql
 
 echo "postgresql installation successfull"

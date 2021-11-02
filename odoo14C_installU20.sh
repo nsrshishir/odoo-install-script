@@ -15,7 +15,7 @@ echo .
 echo .
 echo .
 
-sudo apt update && apt upgrade -y
+sudo apt update && sudo apt upgrade -y
 sudo apt -yq install postgresql
 
 echo "postgresql installation successfull"
