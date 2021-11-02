@@ -15,13 +15,13 @@ echo .
 
 sudo apt update && sudo apt upgrade -y
 
-echo "Installing python3.8"
-echo .
-echo .
-echo .
-sudo apt install python3.8 python3.8-dev python3.8-dbg -y
-sudo update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.8
-sudo update-alternatives --config python3
+# echo "Installing python3.8"
+# echo .
+# echo .
+# echo .
+# sudo apt install python3.8 python3.8-dev python3.8-dbg -y
+# sudo update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.8
+# sudo update-alternatives --config python3
 
 
 echo .
@@ -47,7 +47,8 @@ sudo echo "deb http://nightly.odoo.com/14.0/nightly/deb/ ./" >> /etc/apt/sources
 sudo apt-get update && sudo apt-get -yq install odoo
 
 sudo apt install python3-pip -y
-sudo pip3 install xlwt num2words -y
+sudo pip3 install xlwt -y
+sudo pip3 install num2words -y
 
 echo .
 echo .

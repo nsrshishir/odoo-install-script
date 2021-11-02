@@ -31,7 +31,9 @@ echo "postgresql installation successfull"
 echo .
 echo .
 echo .
-
+sudo apt install python3-pip -y
+sudo pip3 install xlwt -y
+sudo pip3 install num2words -y
 
 echo "Installing Odoo 15.0 Community Edition"
 
@@ -39,8 +41,6 @@ sudo wget -O - https://nightly.odoo.com/odoo.key | apt-key add -
 sudo echo "deb http://nightly.odoo.com/15.0/nightly/deb/ ./" >> /etc/apt/sources.list.d/odoo.list
 sudo apt-get update && sudo apt-get -yq install odoo
 
-sudo apt install python3-pip -y
-sudo pip3 install xlwt num2words -y
 
 echo .
 echo .
