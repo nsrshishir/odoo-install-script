@@ -47,9 +47,8 @@ sudo echo "deb http://nightly.odoo.com/14.0/nightly/deb/ ./" >> /etc/apt/sources
 sudo apt-get update && sudo apt-get -yq install odoo
 
 sudo apt install python3-pip -y
-sudo pip3 install xlwt -y
-sudo pip3 install num2words -y
-
+sudo pip3 install xlwt
+sudo pip3 install num2words
 echo .
 echo .
 echo .

@@ -24,8 +24,8 @@ echo .
 echo .
 echo .
 sudo apt install python3-pip -y
-sudo pip3 install xlwt -y
-sudo pip3 install num2words -y
+sudo pip3 install xlwt
+sudo pip3 install num2words
 
 
 echo "Installing Odoo 14.0 Community Edition"
