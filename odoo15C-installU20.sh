@@ -39,7 +39,7 @@ echo "Installing Odoo 15.0 Community Edition"
 
 sudo wget -O - https://nightly.odoo.com/odoo.key | apt-key add -
 sudo echo "deb http://nightly.odoo.com/15.0/nightly/deb/ ./" >> /etc/apt/sources.list.d/odoo.list
-sudo apt-get update && sudo apt-get -yq install odoo
+sudo apt update && sudo apt install odoo -y
 
 
 echo .
