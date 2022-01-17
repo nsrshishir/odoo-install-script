@@ -85,22 +85,30 @@ sudo apt-get install nodejs npm -y
 sudo npm install -g rtlcss
 
 #--------------------------------------------------
+# Install Bangla fonts
+#--------------------------------------------------
+echo -e "\n---- Installing Lohit Bengali font. ----"
+sudo apt install fonts-beng
+
+
+
+#--------------------------------------------------
 # Install Wkhtmltopdf if needed
 #--------------------------------------------------
 if [ $INSTALL_WKHTMLTOPDF = "True" ]; then
-  echo -e "\n---- Install wkhtml and place shortcuts on correct place for ODOO 13 ----"
-  #pick up correct one from x64 & x32 versions:
-  if [ "`getconf LONG_BIT`" == "64" ];then
-      _url=$WKHTMLTOX_X64
-  else
-      _url=$WKHTMLTOX_X32
-  fi
-  sudo wget $_url
-  sudo gdebi --n `basename $_url`
-  sudo ln -s /usr/local/bin/wkhtmltopdf /usr/bin
-  sudo ln -s /usr/local/bin/wkhtmltoimage /usr/bin
+    echo -e "\n---- Install wkhtml and place shortcuts on correct place for ODOO 13 ----"
+    #pick up correct one from x64 & x32 versions:
+    if [ "`getconf LONG_BIT`" == "64" ];then
+        _url=$WKHTMLTOX_X64
+    else
+        _url=$WKHTMLTOX_X32
+    fi
+    sudo wget $_url
+    sudo gdebi --n `basename $_url`
+    sudo ln -s /usr/local/bin/wkhtmltopdf /usr/bin
+    sudo ln -s /usr/local/bin/wkhtmltoimage /usr/bin
 else
-  echo "Wkhtmltopdf isn't installed due to the choice of the user!"
+    echo "Wkhtmltopdf isn't installed due to the choice of the user!"
 fi
 
 echo -e "\n---- Create ODOO system user ----"
@@ -125,7 +133,7 @@ if [ $IS_ENTERPRISE = "True" ]; then
     sudo ln -s /usr/bin/nodejs /usr/bin/node
     sudo su $OE_USER -c "mkdir $OE_HOME/enterprise"
     sudo su $OE_USER -c "mkdir $OE_HOME/enterprise/addons"
-
+    
     GITHUB_RESPONSE=$(sudo git clone --depth 1 --branch $OE_VERSION https://www.github.com/odoo/enterprise "$OE_HOME/enterprise/addons" 2>&1)
     while [[ $GITHUB_RESPONSE == *"Authentication"* ]]; do
         echo "------------------------WARNING------------------------------"
@@ -136,7 +144,7 @@ if [ $IS_ENTERPRISE = "True" ]; then
         echo " "
         GITHUB_RESPONSE=$(sudo git clone --depth 1 --branch $OE_VERSION https://www.github.com/odoo/enterprise "$OE_HOME/enterprise/addons" 2>&1)
     done
-
+    
     echo -e "\n---- Added Enterprise code under $OE_HOME/enterprise/addons ----"
     echo -e "\n---- Installing Enterprise specific libraries ----"
     sudo -H pip3 install num2words ofxparse dbfread ebaysdk firebase_admin pyOpenSSL
@@ -265,9 +273,15 @@ sudo update-rc.d $OE_CONFIG defaults
 # Install Nginx if needed
 #--------------------------------------------------
 if [ $INSTALL_NGINX = "True" ]; then
-  echo -e "\n---- Installing and setting up Nginx ----"
-  sudo apt install nginx -y
+    echo -e "\n---- Installing and setting up Nginx ----"
+    sudo apt install nginx -y
   cat <<EOF > ~/odoo
+  upstream odooserver {
+      server 127.0.0.1:$OE_PORT;
+  }
+  upstream odoolongpoll {
+      server 127.0.0.1:$LONGPOLLING_PORT;
+  }
   server {
   listen 80;
 
@@ -316,17 +330,17 @@ if [ $INSTALL_NGINX = "True" ]; then
   client_max_body_size 0;
 
   location / {
-  proxy_pass    http://127.0.0.1:$OE_PORT;
+  proxy_pass http://odooserver;
   # by default, do not forward anything
   proxy_redirect off;
   }
 
   location /longpolling {
-  proxy_pass http://127.0.0.1:$LONGPOLLING_PORT;
+  proxy_pass http://odoolongpoll;
   }
   location ~* .(js|css|png|jpg|jpeg|gif|ico)$ {
   expires 2d;
-  proxy_pass http://127.0.0.1:$OE_PORT;
+  proxy_pass http://odooserver;
   add_header Cache-Control "public, no-transform";
   }
   # cache some static data in memory for 60mins.
@@ -335,19 +349,19 @@ if [ $INSTALL_NGINX = "True" ]; then
   proxy_cache_valid 404      1m;
   proxy_buffering    on;
   expires 864000;
-  proxy_pass    http://127.0.0.1:$OE_PORT;
+  proxy_pass http://odooserver;
   }
   }
 EOF
-
-  sudo mv ~/odoo /etc/nginx/sites-available/
-  sudo ln -s /etc/nginx/sites-available/odoo /etc/nginx/sites-enabled/odoo
-  sudo rm /etc/nginx/sites-enabled/default
-  sudo service nginx reload
-  sudo su root -c "printf 'proxy_mode = True\n' >> /etc/${OE_CONFIG}.conf"
-  echo "Done! The Nginx server is up and running. Configuration can be found at /etc/nginx/sites-available/odoo"
+    
+    sudo mv ~/odoo /etc/nginx/sites-available/
+    sudo ln -s /etc/nginx/sites-available/odoo /etc/nginx/sites-enabled/odoo
+    sudo rm /etc/nginx/sites-enabled/default
+    sudo service nginx reload
+    sudo su root -c "printf 'proxy_mode = True\n' >> /etc/${OE_CONFIG}.conf"
+    echo "Done! The Nginx server is up and running. Configuration can be found at /etc/nginx/sites-available/odoo"
 else
-  echo "Nginx isn't installed due to choice of the user!"
+    echo "Nginx isn't installed due to choice of the user!"
 fi
 
 #--------------------------------------------------
@@ -355,13 +369,13 @@ fi
 #--------------------------------------------------
 
 if [ $INSTALL_NGINX = "True" ] && [ $ENABLE_SSL = "True" ] && [ $ADMIN_EMAIL != "odoo@example.com" ]  && [ $WEBSITE_NAME != "_" ];then
-  sudo add-apt-repository ppa:certbot/certbot -y && sudo apt-get update -y
-  sudo apt-get install python3-certbot-nginx -y
-  sudo certbot --nginx -d $WEBSITE_NAME --noninteractive --agree-tos --email $ADMIN_EMAIL --redirect
-  sudo service nginx reload
-  echo "SSL/HTTPS is enabled!"
+    sudo add-apt-repository ppa:certbot/certbot -y && sudo apt-get update -y
+    sudo apt-get install python3-certbot-nginx -y
+    sudo certbot --nginx -d $WEBSITE_NAME --noninteractive --agree-tos --email $ADMIN_EMAIL --redirect
+    sudo service nginx reload
+    echo "SSL/HTTPS is enabled!"
 else
-  echo "SSL/HTTPS isn't enabled due to choice of the user or because of a misconfiguration!"
+    echo "SSL/HTTPS isn't enabled due to choice of the user or because of a misconfiguration!"
 fi
 
 echo -e "* Starting Odoo Service"
@@ -380,6 +394,6 @@ echo "Start Odoo service: sudo service $OE_CONFIG start"
 echo "Stop Odoo service: sudo service $OE_CONFIG stop"
 echo "Restart Odoo service: sudo service $OE_CONFIG restart"
 if [ $INSTALL_NGINX = "True" ]; then
-  echo "Nginx configuration file: /etc/nginx/sites-available/odoo"
+    echo "Nginx configuration file: /etc/nginx/sites-available/odoo"
 fi
 echo "-----------------------------------------------------------"
