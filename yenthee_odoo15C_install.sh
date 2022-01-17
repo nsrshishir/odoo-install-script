@@ -351,6 +351,10 @@ if [ $INSTALL_NGINX = "True" ]; then
   expires 864000;
   proxy_pass http://odooserver;
   }
+  location /wait {
+  #proxy_pass http://odooserver;
+  proxy_cookie_path / "/; secure; HttpOnly; SameSite=None; Secure";
+  }
   }
 EOF
     
