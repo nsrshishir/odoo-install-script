@@ -39,7 +39,7 @@ echo "Installing Odoo 15.0 Community Edition"
 
 sudo wget -O - https://nightly.odoo.com/odoo.key | apt-key add -
 sudo echo "deb http://nightly.odoo.com/15.0/nightly/deb/ ./" >> /etc/apt/sources.list.d/odoo.list
-sudo apt-get update && sudo apt-get -yq install odoo
+sudo apt update && sudo apt install odoo -y
 
 
 echo .
@@ -107,6 +107,17 @@ EOF
   sudo rm /etc/nginx/sites-enabled/default
   sudo service nginx reload
   sudo su root -c "printf 'proxy_mode = True\n' >> /etc/odoo/odoo.conf"
+
+  if [ ! -d "/odoo" ] 
+    then
+    sudo mkdir /odoo   
+  fi
+  if [ ! -d "/odoo/custom-addons" ] 
+    then
+    sudo mkdir /odoo/custom-addons  
+  fi
+  sudo chmod -755 /odoo/custom-addons
+  
   echo "Done! The Nginx server is up and running. Configuration can be found at /etc/nginx/sites-available/odoo"
 
 sudo add-apt-repository ppa:certbot/certbot -y && sudo apt-get update -y
