@@ -88,7 +88,7 @@ sudo npm install -g rtlcss
 # Install Bangla fonts
 #--------------------------------------------------
 echo -e "\n---- Installing Lohit Bengali font. ----"
-sudo apt install fonts-beng
+sudo apt install fonts-beng -y
 
 
 
