@@ -24,7 +24,7 @@ INSTALL_WKHTMLTOPDF="True"
 OE_PORT="8069"
 # Choose the Odoo version which you want to install. For example: 13.0, 12.0, 11.0 or saas-18. When using 'master' the master version will be installed.
 # IMPORTANT! This script contains extra libraries that are specifically needed for Odoo 13.0
-OE_VERSION="15.0"
+OE_VERSION="10.0"
 # Set this to True if you want to install the Odoo enterprise version!
 IS_ENTERPRISE="False"
 # Set this to True if you want to install Nginx!
@@ -77,11 +77,11 @@ sudo su - postgres -c "createuser -s $OE_USER" 2> /dev/null || true
 #--------------------------------------------------
 # Install Dependencies
 #--------------------------------------------------
-echo -e "\n--- Installing Python 3 + pip3 --"
-sudo apt-get install git python3 python3-pip build-essential wget python3-dev python3-venv python3-wheel libxslt-dev libzip-dev libldap2-dev libsasl2-dev python3-setuptools node-less libpng12-0 libjpeg-dev gdebi -y
+echo -e "\n--- Installing Python 3 + pip --"
+sudo apt-get install git python python-pip build-essential wget python-dev python-virtualenv python-wheel libxslt1-dev libzip-dev libldap2-dev libsasl2-dev python-setuptools node-less libpng12-0 libjpeg-dev gdebi -y
 
 echo -e "\n---- Install python packages/requirements ----"
-sudo -H pip3 install -r https://github.com/odoo/odoo/raw/${OE_VERSION}/requirements.txt
+sudo -H pip install -r https://github.com/odoo/odoo/raw/${OE_VERSION}/requirements.txt
 
 echo -e "\n---- Installing nodeJS NPM and rtlcss for LTR support ----"
 sudo apt-get install nodejs npm -y
@@ -91,7 +91,7 @@ sudo npm install -g rtlcss
 # Install Bangla fonts
 #--------------------------------------------------
 echo -e "\n---- Installing Lohit Bengali font. ----"
-sudo apt install fonts-beng -y
+sudo apt install fonts-beng fonts-beng-extra -y
 
 
 
@@ -131,7 +131,7 @@ sudo git clone --depth 1 --branch $OE_VERSION https://www.github.com/odoo/odoo $
 
 if [ $IS_ENTERPRISE = "True" ]; then
     # Odoo Enterprise install!
-    sudo pip3 install psycopg2-binary pdfminer.six
+    sudo pip install psycopg2-binary pdfminer.six
     echo -e "\n--- Create symlink for node"
     sudo ln -s /usr/bin/nodejs /usr/bin/node
     sudo su $OE_USER -c "mkdir $OE_HOME/enterprise"
@@ -150,7 +150,7 @@ if [ $IS_ENTERPRISE = "True" ]; then
     
     echo -e "\n---- Added Enterprise code under $OE_HOME/enterprise/addons ----"
     echo -e "\n---- Installing Enterprise specific libraries ----"
-    sudo -H pip3 install num2words ofxparse dbfread ebaysdk firebase_admin pyOpenSSL
+    sudo -H pip install num2words ofxparse dbfread ebaysdk firebase_admin pyOpenSSL
     sudo npm install -g less
     sudo npm install -g less-plugin-clean-css
 fi
@@ -377,7 +377,7 @@ fi
 
 if [ $INSTALL_NGINX = "True" ] && [ $ENABLE_SSL = "True" ] && [ $ADMIN_EMAIL != "odoo@example.com" ]  && [ $WEBSITE_NAME != "_" ];then
     sudo add-apt-repository ppa:certbot/certbot -y && sudo apt-get update -y
-    sudo apt-get install python3-certbot-nginx -y
+    sudo apt-get install python-certbot-nginx -y
     sudo certbot --nginx -d $WEBSITE_NAME --noninteractive --agree-tos --email $ADMIN_EMAIL --redirect
     sudo service nginx reload
     echo "SSL/HTTPS is enabled!"
