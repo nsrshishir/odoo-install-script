@@ -24,7 +24,7 @@ echo "Postgresql Installation Started"
 echo .
 echo .
 echo .
-sudo apt -yq install postgresql
+sudo apt -yq install postgresql postgis
 
 echo "postgresql installation successfull"
 

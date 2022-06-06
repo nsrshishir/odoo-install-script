@@ -16,7 +16,7 @@ echo .
 echo .
 
 sudo apt update && sudo apt upgrade -y
-sudo apt -yq install postgresql
+sudo apt -yq install postgresql postgis
 
 echo "postgresql installation successfull"
 
