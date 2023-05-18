@@ -62,7 +62,7 @@ echo -e "\n---- Update Server ----"
 echo "deb http://security.ubuntu.com/ubuntu focal-security main" | sudo tee /etc/apt/sources.list.d/focal-security.list
 sudo apt-get update
 sudo apt-get upgrade -y
-sudo apt install curl ca-certificates gnupg
+sudo apt install curl ca-certificates gnupg2 lsb-release ubuntu-keyring
 #--------------------------------------------------
 # Install PostgreSQL Server
 #--------------------------------------------------
@@ -288,8 +288,21 @@ sudo update-rc.d $OE_CONFIG defaults
 #--------------------------------------------------
 if [ $INSTALL_NGINX = "True" ]; then
     echo -e "\n---- Installing and setting up Nginx ----"
-    sudo apt install nginx -y
-  cat <<EOF > ~/odoo
+
+    echo -e "\n---- Importing an official nginx signing key so apt could verify the packages authenticity ----"
+    curl https://nginx.org/keys/nginx_signing.key | gpg --dearmor | sudo tee /usr/share/keyrings/nginx-archive-keyring.gpg >/dev/null
+
+    echo -e "\n---- Verifing that the downloaded file contains the proper key ----"
+    gpg --dry-run --quiet --no-keyring --import --import-options import-show /usr/share/keyrings/nginx-archive-keyring.gpg
+
+    echo -e "\n---- set up the apt repository for stable nginx packages ----"
+    echo "deb [signed-by=/usr/share/keyrings/nginx-archive-keyring.gpg] http://nginx.org/packages/ubuntu `lsb_release -cs` nginx" | sudo tee /etc/apt/sources.list.d/nginx.list
+
+    sudo apt update; sudo apt install nginx -y
+    sudo -H pip3 install certbot certbot-nginx
+
+
+  cat <<EOF > ~/odoo.conf
   upstream odooserver {
       server 127.0.0.1:$OE_PORT;
   }
@@ -372,12 +385,12 @@ if [ $INSTALL_NGINX = "True" ]; then
   }
 EOF
     
-    sudo mv ~/odoo /etc/nginx/sites-available/
-    sudo ln -s /etc/nginx/sites-available/odoo /etc/nginx/sites-enabled/odoo
-    sudo rm /etc/nginx/sites-enabled/default
+    sudo mv ~/odoo.conf /etc/nginx/conf.d/
+    # sudo ln -s /etc/nginx/sites-available/odoo /etc/nginx/sites-enabled/odoo
+    sudo rm /etc/nginx/conf.d/default.conf
     sudo service nginx reload
     sudo su root -c "printf 'proxy_mode = True\n' >> /etc/${OE_CONFIG}.conf"
-    echo "Done! The Nginx server is up and running. Configuration can be found at /etc/nginx/sites-available/odoo"
+    echo "Done! The Nginx server is up and running. Configuration can be found at /etc/nginx/conf.d/odoo.conf"
 else
     echo "Nginx isn't installed due to choice of the user!"
 fi
@@ -387,7 +400,6 @@ fi
 #--------------------------------------------------
 
 if [ $INSTALL_NGINX = "True" ] && [ $ENABLE_SSL = "True" ] && [ $ADMIN_EMAIL != "odoo@example.com" ]  && [ $WEBSITE_NAME != "_" ];then
-    sudo -H pip3 install certbot certbot-nginx
     sudo certbot --nginx -d $WEBSITE_NAME --noninteractive --agree-tos --email $ADMIN_EMAIL --redirect
     sudo service nginx reload
     echo "SSL/HTTPS is enabled!"
