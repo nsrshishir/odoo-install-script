@@ -62,7 +62,7 @@ echo -e "\n---- Update Server ----"
 echo "deb http://security.ubuntu.com/ubuntu focal-security main" | sudo tee /etc/apt/sources.list.d/focal-security.list
 sudo apt-get update
 sudo apt-get upgrade -y
-sudo apt install curl ca-certificates gnupg2 lsb-release ubuntu-keyring
+sudo apt install curl ca-certificates gnupg2 lsb-release ubuntu-keyring -y
 #--------------------------------------------------
 # Install PostgreSQL Server
 #--------------------------------------------------
