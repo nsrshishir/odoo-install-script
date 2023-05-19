@@ -407,6 +407,9 @@ else
     echo "SSL/HTTPS isn't enabled due to choice of the user or because of a misconfiguration!"
 fi
 
+sudo -H pip3 install pyOpenSSL==20.0.1
+sudo -H pip3 install cryptography==36.0.2
+
 echo -e "* Starting Odoo Service"
 sudo su root -c "/etc/init.d/$OE_CONFIG start"
 echo "-----------------------------------------------------------"
