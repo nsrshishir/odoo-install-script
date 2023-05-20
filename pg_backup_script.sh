@@ -39,9 +39,13 @@ fi
 #dumping database
 sudo -u postgres pg_dump -Fc -f $src_bkup_loc$filename $db_name
 
-#syncing databases
-rsync -a -e "sshpass -p $dest_pass ssh -o StrictHostKeyChecking=no" $src_bkup_loc $dest_user@$dest_host:$dest_bkup_loc
+
+if [ $dest_user != "Host_address" ] && [ $dest_user != "Username" ] && [ $WEBSITE_NAME != "Password" ]; then
+    # sudo apt install sshpass
+    #syncing databases
+    rsync -a -e "sshpass -p $dest_pass ssh -o StrictHostKeyChecking=no" $src_bkup_loc $dest_user@$dest_host:$dest_bkup_loc
 
 
-#syncing filestore
-rsync -a -e "sshpass -p $dest_pass ssh -o StrictHostKeyChecking=no" $src_filestore $dest_user@$dest_host:$dest_filestore
+    #syncing filestore
+    rsync -a -e "sshpass -p $dest_pass ssh -o StrictHostKeyChecking=no" $src_filestore $dest_user@$dest_host:$dest_filestore
+fi
