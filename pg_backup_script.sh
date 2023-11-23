@@ -38,6 +38,8 @@ fi
 
 #dumping database
 sudo -u postgres pg_dump -Fc -f $src_bkup_loc$filename".dump" $db_name
+
+#Creating a tar.gz file with db dump and db filestores
 tar -czf $src_bkup_loc$filename".tar.gz" -C $src_bkup_loc $filename".dump" -C $src_filestore_loc $db_name
 
 sudo rm $src_bkup_loc$filename".dump"
