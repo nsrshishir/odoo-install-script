@@ -8,11 +8,11 @@ daylimit=2
 
 #Database information
 db_name="db_name"
-filename=$db_name"_backup_$today.dump"
+filename=$db_name"_backup_$today"
 
 #Source Host information
 src_bkup_loc="/odoo/db_backup/"
-src_filestore="/Odoo/filestore/$db_name/"
+src_filestore="/Odoo/filestore/"
 
 #Destination Host information
 dest_bkup_loc="/dest/db_backup/"
@@ -37,7 +37,10 @@ if test -f "$src_bkup_loc$filename"; then
 fi
 
 #dumping database
-sudo -u postgres pg_dump -Fc -f $src_bkup_loc$filename $db_name
+sudo -u postgres pg_dump -Fc -f $src_bkup_loc$filename".dump" $db_name
+tar -czf $src_bkup_loc$filename".tar.gz" -C $src_bkup_loc $filename".dump" -C $src_filestore_loc $db_name
+
+sudo rm $src_bkup_loc$filename".dump"
 
 
 if [ $dest_user != "Host_address" ] && [ $dest_user != "Username" ] && [ $WEBSITE_NAME != "Password" ]; then
@@ -47,5 +50,5 @@ if [ $dest_user != "Host_address" ] && [ $dest_user != "Username" ] && [ $WEBSIT
 
 
     #syncing filestore
-    rsync -a -e "sshpass -p $dest_pass ssh -o StrictHostKeyChecking=no" $src_filestore $dest_user@$dest_host:$dest_filestore
+    # rsync -a -e "sshpass -p $dest_pass ssh -o StrictHostKeyChecking=no" $src_filestore $dest_user@$dest_host:$dest_filestore
 fi
