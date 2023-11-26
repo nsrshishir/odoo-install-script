@@ -8,11 +8,13 @@ daylimit=2
 
 #Database information
 db_name="db_name"
-filename=$db_name"_backup_$today"
+bkup_filename=$db_name"_backup_$today"
+db_dump_filename=$bkup_filename".dump"
 
 #Source Host information
 src_bkup_loc="/odoo/db_backup/"
-src_filestore="/Odoo/filestore/"
+src_filestore_loc="/odoo/.local/share/Odoo/filestore/"
+abs_bkup_filename=$src_bkup_loc$filename".tar.gz"
 
 #Destination Host information
 dest_bkup_loc="/dest/db_backup/"
@@ -32,17 +34,17 @@ if [ $daylimit -ne 0 ]; then
 fi
 
 #Checking Source backup file exist, Removing one if exits
-if test -f "$src_bkup_loc$filename"; then
-    rm "$src_bkup_loc$filename"
+if test -f $abs_bkup_filename; then
+    rm $abs_bkup_filename;
 fi
 
 #dumping database
-sudo -u postgres pg_dump -Fc -f $src_bkup_loc$filename".dump" $db_name
+sudo -u postgres pg_dump -Fc -f $src_bkup_loc$db_dump_filename $db_name
 
 #Creating a tar.gz file with db dump and db filestores
-tar -czf $src_bkup_loc$filename".tar.gz" -C $src_bkup_loc $filename".dump" -C $src_filestore_loc $db_name
+tar -czf $abs_bkup_filename -C $src_bkup_loc $db_dump_filename -C $src_filestore_loc $db_name
 
-sudo rm $src_bkup_loc$filename".dump"
+sudo rm $src_bkup_loc$db_dump_filename
 
 
 if [ $dest_user != "Host_address" ] && [ $dest_user != "Username" ] && [ $WEBSITE_NAME != "Password" ]; then
