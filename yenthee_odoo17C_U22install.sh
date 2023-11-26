@@ -75,7 +75,7 @@ sudo apt-get update
 sudo apt-get install postgresql postgresql-server-dev-all postgis -y
 
 echo -e "\n---- Creating the ODOO PostgreSQL User  ----"
-sudo su - postgres -c "createuser -s $OE_USER" 2> /dev/null || true
+sudo su - postgres -c "createuser -s $OE_USER" 2>/dev/null || true
 
 #--------------------------------------------------
 # Install Dependencies
@@ -100,24 +100,22 @@ sudo npm install -g rtlcss
 echo -e "\n---- Installing Lohit Bengali font. ----"
 sudo apt install fonts-beng -y
 
-
-
 #--------------------------------------------------
 # Install Wkhtmltopdf if needed
 #--------------------------------------------------
 if [ $INSTALL_WKHTMLTOPDF = "True" ]; then
     echo -e "\n---- Install wkhtml and place shortcuts on correct place for ODOO 15 ----"
     # echo -e "\n ---- Installing libssl1.1"
-    
+
     # sudo wget http://archive.ubuntu.com/ubuntu/pool/main/o/openssl/libssl1.1_1.1.0g-2ubuntu4_amd64.deb
     # sudo apt install ./libssl1.1_1.1.0g-2ubuntu4_amd64.deb -y
 
     #pick up correct one from x64 & x32 versions:
-    if [ "`getconf LONG_BIT`" == "64" ];then
+    if [ "$(getconf LONG_BIT)" == "64" ]; then
         _url=$WKHTMLTOX_X64
     fi
     sudo wget $_url
-    sudo gdebi --n `basename $_url`
+    sudo gdebi --n $(basename $_url)
     sudo ln -s /usr/local/bin/wkhtmltopdf /usr/bin
     sudo ln -s /usr/local/bin/wkhtmltoimage /usr/bin
 else
@@ -157,7 +155,7 @@ if [ $IS_ENTERPRISE = "True" ]; then
         echo " "
         GITHUB_RESPONSE=$(sudo git clone --depth 1 --branch $OE_VERSION https://www.github.com/odoo/enterprise "$OE_HOME/enterprise/addons" 2>&1)
     done
-    
+
     echo -e "\n---- Added Enterprise code under $OE_HOME/enterprise/addons ----"
     echo -e "\n---- Installing Enterprise specific libraries ----"
     sudo -H pip3 install num2words ofxparse dbfread ebaysdk firebase_admin pyOpenSSL
@@ -174,7 +172,6 @@ sudo chown -R $OE_USER:$OE_USER $OE_HOME/*
 
 echo -e "* Create server config file"
 
-
 sudo touch /etc/${OE_CONFIG}.conf
 echo -e "* Creating server config file"
 sudo su root -c "printf '[options] \n; This is the password that allows database operations:\n' >> /etc/${OE_CONFIG}.conf"
@@ -183,7 +180,7 @@ if [ $GENERATE_RANDOM_PASSWORD = "True" ]; then
     OE_SUPERADMIN=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 16 | head -n 1)
 fi
 sudo su root -c "printf 'admin_passwd = ${OE_SUPERADMIN}\n' >> /etc/${OE_CONFIG}.conf"
-if [ $OE_VERSION > "11.0" ];then
+if [ $OE_VERSION ] >"11.0"; then
     sudo su root -c "printf 'http_port = ${OE_PORT}\n' >> /etc/${OE_CONFIG}.conf"
     sudo su root -c "printf 'gevent_port = ${LONGPOLLING_PORT}\n' >> /etc/${OE_CONFIG}.conf"
 else
@@ -209,7 +206,7 @@ sudo chmod 755 $OE_HOME_EXT/start.sh
 #--------------------------------------------------
 
 echo -e "* Create init file"
-cat <<EOF > ~/$OE_CONFIG
+cat <<EOF >~/$OE_CONFIG
 #!/bin/sh
 ### BEGIN INIT INFO
 # Provides: $OE_CONFIG
@@ -296,19 +293,24 @@ if [ $INSTALL_NGINX = "True" ]; then
     gpg --dry-run --quiet --no-keyring --import --import-options import-show /usr/share/keyrings/nginx-archive-keyring.gpg
 
     echo -e "\n---- set up the apt repository for stable nginx packages ----"
-    echo "deb [signed-by=/usr/share/keyrings/nginx-archive-keyring.gpg] http://nginx.org/packages/ubuntu `lsb_release -cs` nginx" | sudo tee /etc/apt/sources.list.d/nginx.list
+    echo "deb [signed-by=/usr/share/keyrings/nginx-archive-keyring.gpg] http://nginx.org/packages/ubuntu $(lsb_release -cs) nginx" | sudo tee /etc/apt/sources.list.d/nginx.list
 
-    sudo apt update; sudo apt install nginx -y
+    sudo apt update
+    sudo apt install nginx -y
     sudo -H pip3 install certbot certbot-nginx
 
-
-  cat <<EOF > ~/odoo.conf
+    cat <<EOF >~/odoo.conf
   upstream odooserver {
       server 127.0.0.1:$OE_PORT;
   }
   upstream odoolongpoll {
       server 127.0.0.1:$LONGPOLLING_PORT;
   }
+  map \$http_upgrade \$connection_upgrade {
+  default upgrade;
+  ''      close;
+  }
+
   server {
   listen 80;
 
@@ -320,11 +322,7 @@ if [ $INSTALL_NGINX = "True" ]; then
   proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
   proxy_set_header X-Forwarded-Proto \$scheme;
   proxy_set_header X-Real-IP \$remote_addr;
-  add_header X-Frame-Options "SAMEORIGIN";
-  add_header X-XSS-Protection "1; mode=block";
-  proxy_set_header X-Client-IP \$remote_addr;
-  proxy_set_header HTTP_X_FORWARDED_HOST \$remote_addr;
-
+  
   #   odoo    log files
   access_log  /var/log/nginx/$OE_USER-access.log;
   error_log       /var/log/nginx/$OE_USER-error.log;
@@ -350,7 +348,7 @@ if [ $INSTALL_NGINX = "True" ]; then
   gzip    on;
   gzip_min_length 1100;
   gzip_buffers    4   32k;
-  gzip_types  text/css text/less text/plain text/xml application/xml application/json application/javascript application/pdf image/jpeg image/png;
+  gzip_types  text/css text/scss text/less text/plain text/xml application/xml application/json application/javascript application/pdf image/jpeg image/png image/webp;
   gzip_vary   on;
   client_header_buffer_size 4k;
   large_client_header_buffers 4 64k;
@@ -360,10 +358,17 @@ if [ $INSTALL_NGINX = "True" ]; then
   proxy_pass http://odooserver;
   # by default, do not forward anything
   proxy_redirect off;
+  proxy_cookie_path / "/; secure; HttpOnly; SameSite=None; Secure";
+  add_header Strict-Transport-Security "max-age=31536000; includeSubDomains";
+
   }
 
   location /websocket {
   proxy_pass http://odoolongpoll;
+  proxy_redirect off;
+  proxy_set_header Upgrade \$http_upgrade;
+  proxy_set_header Connection \$connection_upgrade;
+  
   }
   location ~* .(js|css|png|jpg|jpeg|gif|ico)$ {
   expires 2d;
@@ -378,13 +383,9 @@ if [ $INSTALL_NGINX = "True" ]; then
   expires 864000;
   proxy_pass http://odooserver;
   }
-  location /wait {
-  #proxy_pass http://odooserver;
-  proxy_cookie_path / "/; secure; HttpOnly; SameSite=None; Secure";
-  }
   }
 EOF
-    
+
     sudo mv ~/odoo.conf /etc/nginx/conf.d/
     # sudo ln -s /etc/nginx/sites-available/odoo /etc/nginx/sites-enabled/odoo
     sudo rm /etc/nginx/conf.d/default.conf
@@ -399,7 +400,7 @@ fi
 # Enable ssl with certbot
 #--------------------------------------------------
 
-if [ $INSTALL_NGINX = "True" ] && [ $ENABLE_SSL = "True" ] && [ $ADMIN_EMAIL != "odoo@example.com" ]  && [ $WEBSITE_NAME != "_" ];then
+if [ $INSTALL_NGINX = "True" ] && [ $ENABLE_SSL = "True" ] && [ $ADMIN_EMAIL != "odoo@example.com" ] && [ $WEBSITE_NAME != "_" ]; then
     sudo certbot --nginx -d $WEBSITE_NAME --noninteractive --agree-tos --email $ADMIN_EMAIL --redirect
     sudo service nginx reload
     echo "SSL/HTTPS is enabled!"

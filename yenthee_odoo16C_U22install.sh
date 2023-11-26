@@ -309,6 +309,11 @@ if [ $INSTALL_NGINX = "True" ]; then
   upstream odoolongpoll {
       server 127.0.0.1:$LONGPOLLING_PORT;
   }
+  map \$http_upgrade \$connection_upgrade {
+  default upgrade;
+  ''      close;
+  }
+
   server {
   listen 80;
 
@@ -320,11 +325,7 @@ if [ $INSTALL_NGINX = "True" ]; then
   proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
   proxy_set_header X-Forwarded-Proto \$scheme;
   proxy_set_header X-Real-IP \$remote_addr;
-  add_header X-Frame-Options "SAMEORIGIN";
-  add_header X-XSS-Protection "1; mode=block";
-  proxy_set_header X-Client-IP \$remote_addr;
-  proxy_set_header HTTP_X_FORWARDED_HOST \$remote_addr;
-
+  
   #   odoo    log files
   access_log  /var/log/nginx/$OE_USER-access.log;
   error_log       /var/log/nginx/$OE_USER-error.log;
@@ -350,7 +351,7 @@ if [ $INSTALL_NGINX = "True" ]; then
   gzip    on;
   gzip_min_length 1100;
   gzip_buffers    4   32k;
-  gzip_types  text/css text/less text/plain text/xml application/xml application/json application/javascript application/pdf image/jpeg image/png;
+  gzip_types  text/css text/scss text/less text/plain text/xml application/xml application/json application/javascript application/pdf image/jpeg image/png image/webp;
   gzip_vary   on;
   client_header_buffer_size 4k;
   large_client_header_buffers 4 64k;
@@ -360,10 +361,17 @@ if [ $INSTALL_NGINX = "True" ]; then
   proxy_pass http://odooserver;
   # by default, do not forward anything
   proxy_redirect off;
+  proxy_cookie_path / "/; secure; HttpOnly; SameSite=None; Secure";
+  add_header Strict-Transport-Security "max-age=31536000; includeSubDomains";
+
   }
 
   location /websocket {
   proxy_pass http://odoolongpoll;
+  proxy_redirect off;
+  proxy_set_header Upgrade \$http_upgrade;
+  proxy_set_header Connection \$connection_upgrade;
+  
   }
   location ~* .(js|css|png|jpg|jpeg|gif|ico)$ {
   expires 2d;
@@ -377,10 +385,6 @@ if [ $INSTALL_NGINX = "True" ]; then
   proxy_buffering    on;
   expires 864000;
   proxy_pass http://odooserver;
-  }
-  location /wait {
-  #proxy_pass http://odooserver;
-  proxy_cookie_path / "/; secure; HttpOnly; SameSite=None; Secure";
   }
   }
 EOF
