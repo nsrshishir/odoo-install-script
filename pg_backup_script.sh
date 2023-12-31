@@ -14,7 +14,7 @@ db_dump_filename=$bkup_filename".dump"
 #Source Host information
 src_bkup_loc="/odoo/db_backup/"
 src_filestore_loc="/odoo/.local/share/Odoo/filestore/"
-abs_bkup_filename=$src_bkup_loc$filename".tar.gz"
+abs_bkup_filename=$src_bkup_loc$bkup_filename".tar.gz"
 
 #Destination Host information
 dest_bkup_loc="/dest/db_backup/"
