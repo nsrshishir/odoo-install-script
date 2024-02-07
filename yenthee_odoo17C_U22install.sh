@@ -181,6 +181,7 @@ if [ $GENERATE_RANDOM_PASSWORD = "True" ]; then
 fi
 sudo su root -c "printf 'admin_passwd = ${OE_SUPERADMIN}\n' >> /etc/${OE_CONFIG}.conf"
 if [ $OE_VERSION ] >"11.0"; then
+    sudo su root -c "printf 'http_interface = 127.0.0.1\n' >> /etc/${OE_CONFIG}.conf"
     sudo su root -c "printf 'http_port = ${OE_PORT}\n' >> /etc/${OE_CONFIG}.conf"
     sudo su root -c "printf 'gevent_port = ${LONGPOLLING_PORT}\n' >> /etc/${OE_CONFIG}.conf"
 else
