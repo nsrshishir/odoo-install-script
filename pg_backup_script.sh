@@ -7,6 +7,7 @@ today=$(date +"%m_%d_%Y")
 daylimit=2
 
 #Database information
+db_user="odoo"
 db_name="db_name"
 bkup_filename=$db_name"_backup_$today"
 db_dump_filename=$bkup_filename".dump"
@@ -39,7 +40,7 @@ if test -f $abs_bkup_filename; then
 fi
 
 #dumping database
-sudo -u postgres pg_dump -Fc -f $src_bkup_loc$db_dump_filename $db_name
+sudo -u $db_user pg_dump -Fc -f $src_bkup_loc$db_dump_filename $db_name
 
 #Creating a tar.gz file with db dump and db filestores
 tar -czf $abs_bkup_filename -C $src_bkup_loc $db_dump_filename -C $src_filestore_loc $db_name
