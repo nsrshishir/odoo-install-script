@@ -26,8 +26,10 @@ dest_pass="Password"
 
 #Checking Source backup Directory, Creating one if doesnt exits
 if [ ! -d $src_bkup_loc ]; then
-    echo "Directory "$src_bkup_loc" does not exist!"
+    echo "Directory "$src_bkup_loc" does not exist! Creating..."
     mkdir $src_bkup_loc
+    echo "Setting Premission 777 to "$src_bkup_loc"
+    chmod 777 $src_bkup_loc
 fi
 
 if [ $daylimit -ne 0 ]; then
