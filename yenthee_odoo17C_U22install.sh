@@ -412,6 +412,29 @@ fi
 sudo -H pip3 install pyOpenSSL==21.0.0
 sudo -H pip3 install cryptography==36.0.2
 
+# ------------------------------------------------------
+# Logrotate installation section
+# ------------------------------------------------------
+echo -e "Install logrotate"
+
+#--------------------------------------------------
+# Install Libraries needed for let's encrypt
+#--------------------------------------------------
+sudo apt-get install -y logrotate
+
+cat <<EOF >/etc/logrotate.d/odoo
+   /var/log/${OE_USER}/${OE_CONFIG}.log {
+        daily
+        rotate 7
+        missingok
+        notifempty
+        compress
+        delaycompress
+        copytruncate
+}
+
+EOF
+
 echo -e "* Starting Odoo Service"
 sudo su root -c "/etc/init.d/$OE_CONFIG start"
 echo "-----------------------------------------------------------"
