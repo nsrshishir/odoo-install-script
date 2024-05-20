@@ -9,7 +9,7 @@ daylimit=2
 #Database information
 db_user="odoo"
 db_name="db_name"
-bkup_filename=$db_name"_backup_$today"
+bkup_filename=$db_name"_backup_"$today
 db_dump_filename=$bkup_filename".sql"
 
 #Source Host information
@@ -28,7 +28,7 @@ dest_pass="Password"
 if [ ! -d $src_bkup_loc ]; then
     echo "Directory "$src_bkup_loc" does not exist! Creating..."
     mkdir $src_bkup_loc
-    echo "Setting Premission 777 to "$src_bkup_loc"
+    echo "Setting Premission 777 to "$src_bkup_loc
     chmod 777 $src_bkup_loc
 fi
 
@@ -38,7 +38,7 @@ fi
 
 #Checking Source backup file exist, Removing one if exits
 if test -f $abs_bkup_filename; then
-    rm $abs_bkup_filename;
+    rm $abs_bkup_filename
 fi
 
 #dumping database
@@ -49,12 +49,10 @@ tar -czf $abs_bkup_filename -C $src_bkup_loc $db_dump_filename -C $src_filestore
 
 sudo rm $src_bkup_loc$db_dump_filename
 
-
 if [ $dest_user != "Host_address" ] && [ $dest_user != "Username" ] && [ $dest_pass != "Password" ]; then
     # sudo apt install sshpass
     #syncing databases
     rsync -a -e "sshpass -p $dest_pass ssh -o StrictHostKeyChecking=no" $src_bkup_loc $dest_user@$dest_host:$dest_bkup_loc
-
 
     #syncing filestore
     # rsync -a -e "sshpass -p $dest_pass ssh -o StrictHostKeyChecking=no" $src_filestore $dest_user@$dest_host:$dest_filestore
