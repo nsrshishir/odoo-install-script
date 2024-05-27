@@ -42,7 +42,7 @@ if test -f $abs_bkup_filename; then
 fi
 
 #dumping database
-sudo -u $db_user pg_dump -f $src_bkup_loc$db_dump_filename $db_name
+sudo -u $db_user pg_dump --no-owner --no-privileges -f $src_bkup_loc$db_dump_filename $db_name
 
 #Creating a tar.gz file with db dump and db filestores
 tar -czf $abs_bkup_filename -C $src_bkup_loc $db_dump_filename -C $src_filestore_loc $db_name
