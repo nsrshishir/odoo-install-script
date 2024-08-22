@@ -359,8 +359,8 @@ if [ $INSTALL_NGINX = "True" ]; then
   proxy_pass http://odooserver;
   # by default, do not forward anything
   proxy_redirect off;
-  proxy_cookie_path / "/; secure; HttpOnly; SameSite=None; Secure";
-  add_header Strict-Transport-Security "max-age=31536000; includeSubDomains";
+  # proxy_cookie_path / "/; secure; HttpOnly; SameSite=None; Secure";
+  # add_header Strict-Transport-Security "max-age=31536000; includeSubDomains";
 
   }
 
