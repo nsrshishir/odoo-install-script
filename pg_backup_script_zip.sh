@@ -16,6 +16,7 @@ db_dump_filename="dump.sql"
 src_bkup_loc="/odoo/db_backup/"
 src_filestore_loc="/odoo/.local/share/Odoo/filestore/"
 abs_bkup_filename=$src_bkup_loc$bkup_filename".zip"
+src_filestore_bak_loc=$src_bkup_loc"filestore"
 
 #Destination Host information
 dest_bkup_loc="/dest/db_backup/"
@@ -43,24 +44,24 @@ fi
 
 
 #delete filestore folder if exists in source backup location if exists
-if test -f $src_bkup_loc"filestore"; then
-    rm -r $src_bkup_loc"filestore"
+if test -f $src_filestore_bak_loc; then
+    rm -r $src_filestore_bak_loc
 fi
 
 #dumping database
 sudo -u $db_user pg_dump --no-owner --no-privileges -f $src_bkup_loc$db_dump_filename $db_name
 
 #Copping filestore
-cp -r $src_filestore_loc$db_name $src_bkup_loc"filestore"
+cp -r $src_filestore_loc$db_name $src_filestore_bak_loc
 
 
 #Creating a tar.gz file with db dump and db filestores
 # tar -czf $abs_bkup_filename -C $src_bkup_loc $db_dump_filename -C $src_filestore_loc $db_name
-zip -j $abs_bkup_filename $src_bkup_loc$db_dump_filename $src_bkup_loc"filestore"
+zip -r $abs_bkup_filename $src_bkup_loc$db_dump_filename $src_filestore_bak_loc
 
 #removing dump.sql and filestores
 sudo rm $src_bkup_loc$db_dump_filename
-sudo rm -r $src_bkup_loc"filestore"
+sudo rm -r $src_filestore_bak_loc
 
 
 
