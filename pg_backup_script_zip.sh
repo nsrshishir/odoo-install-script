@@ -58,8 +58,11 @@ cp -r $src_filestore_loc$db_name $src_bkup_loc"filestore"
 # tar -czf $abs_bkup_filename -C $src_bkup_loc $db_dump_filename -C $src_filestore_loc $db_name
 zip -j $abs_bkup_filename $src_bkup_loc$db_dump_filename $src_bkup_loc"filestore"
 
-
+#removing dump.sql and filestores
 sudo rm $src_bkup_loc$db_dump_filename
+sudo rm -r $src_bkup_loc"filestore"
+
+
 
 if [ $dest_user != "Host_address" ] && [ $dest_user != "Username" ] && [ $dest_pass != "Password" ]; then
     # sudo apt install sshpass
