@@ -57,7 +57,8 @@ cp -r $src_filestore_loc$db_name $src_filestore_bak_loc
 
 #Creating a tar.gz file with db dump and db filestores
 # tar -czf $abs_bkup_filename -C $src_bkup_loc $db_dump_filename -C $src_filestore_loc $db_name
-zip -r $abs_bkup_filename $src_bkup_loc$db_dump_filename $src_filestore_bak_loc
+cd $src_bkup_loc
+zip -r $abs_bkup_filename $db_dump_filename filestore
 
 #removing dump.sql and filestores
 sudo rm $src_bkup_loc$db_dump_filename
