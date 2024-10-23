@@ -52,7 +52,7 @@ sudo rm $src_bkup_loc$db_dump_filename
 if [ $dest_user != "Host_address" ] && [ $dest_user != "Username" ] && [ $dest_pass != "Password" ]; then
     # sudo apt install sshpass
     #syncing databases
-    rsync -a -e "sshpass -p $dest_pass ssh -o StrictHostKeyChecking=no" $src_bkup_loc $dest_user@$dest_host:$dest_bkup_loc
+    rsync -a --delete -e "sshpass -p $dest_pass ssh -o StrictHostKeyChecking=no" $src_bkup_loc $dest_user@$dest_host:$dest_bkup_loc
 
     #syncing filestore
     # rsync -a -e "sshpass -p $dest_pass ssh -o StrictHostKeyChecking=no" $src_filestore $dest_user@$dest_host:$dest_filestore
