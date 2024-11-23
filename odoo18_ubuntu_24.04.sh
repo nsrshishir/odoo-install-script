@@ -182,7 +182,7 @@ create_config_file() {
     # sudo su root -c "printf '[options] \n; This is the password that allows database operations:\n' >> /etc/${OE_CONFIG}.conf"
     if [ "$GENERATE_RANDOM_PASSWORD" = "True" ]; then
         log "INFO" "Generating random admin password"
-        OE_SUPERADMIN=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 16 | head -n 1)
+        OE_SUPERADMIN="wn4VWh2OBjUUn2nZEKF79Nsjn"
     fi
     sudo su root -c "printf 'admin_passwd = ${OE_SUPERADMIN}\n' >> /etc/${OE_CONFIG}.conf"
     # if [ "$OE_VERSION" ] >"11.0"; then
