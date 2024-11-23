@@ -110,6 +110,7 @@ create_odoo_user() {
     log "INFO" "Creating Odoo system user"
     sudo adduser --system --quiet --shell=/bin/bash --home=$OE_HOME --gecos 'ODOO' --group $OE_USER
     sudo adduser $OE_USER sudo
+    sudo rm -r /var/log/$OE_USER
     sudo mkdir /var/log/$OE_USER
     sudo chown $OE_USER:$OE_USER /var/log/$OE_USER
 }
