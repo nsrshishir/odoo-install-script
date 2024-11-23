@@ -166,7 +166,12 @@ install_odoo() {
 # Create Odoo configuration file
 create_config_file() {
     log "INFO" "Creating Odoo configuration file"
-    sudo rm /etc/${OE_CONFIG}.conf
+    if [ -f "/etc/${OE_CONFIG}.conf" ]; then
+        sudo rm /etc/${OE_CONFIG}.conf
+    else
+        echo "Odoo configuration file is at /etc/${OE_CONFIG}.conf ..."
+    fi
+
     sudo touch /etc/${OE_CONFIG}.conf
     sudo su root -c "printf '[options] \n; This is the password that allows database operations:\n' >> /etc/${OE_CONFIG}.conf"
     if [ "$GENERATE_RANDOM_PASSWORD" = "True" ]; then
