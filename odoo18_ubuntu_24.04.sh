@@ -158,8 +158,13 @@ install_odoo() {
         sudo npm install -g less-plugin-clean-css
     fi
 
-    sudo su $OE_USER -c "mkdir $OE_HOME/custom"
-    sudo su $OE_USER -c "mkdir $OE_HOME/custom/addons"
+    if [ ! -d "$OE_HOME/custom" ]; then
+        sudo su $OE_USER -c "mkdir $OE_HOME/custom"
+        sudo su $OE_USER -c "mkdir $OE_HOME/custom/addons"
+    else
+        echo "$OE_HOME/custom already exists. Passing ..."
+    fi
+
     sudo chown -R $OE_USER:$OE_USER $OE_HOME/*
 }
 
