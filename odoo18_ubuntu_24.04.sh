@@ -110,8 +110,11 @@ create_odoo_user() {
     log "INFO" "Creating Odoo system user"
     sudo adduser --system --quiet --shell=/bin/bash --home=$OE_HOME --gecos 'ODOO' --group $OE_USER
     sudo adduser $OE_USER sudo
-    sudo rm -r /var/log/$OE_USER
-    sudo mkdir /var/log/$OE_USER
+    if [ ! -d "/var/log/$OE_USER" ]; then
+        sudo mkdir /var/log/$OE_USER
+    else
+        echo " Directory /var/log/$OE_USER exists. Passing..."
+    fi
     sudo chown $OE_USER:$OE_USER /var/log/$OE_USER
 }
 
@@ -128,14 +131,17 @@ create_virtual_environment() {
 install_odoo() {
     log "INFO" "Installing Odoo Server"
     rm -r $OE_HOME_EXT
-    sudo git clone --depth 1 --branch $OE_VERSION https://www.github.com/odoo/odoo $OE_HOME_EXT/
+    if [ ! -d "$OE_HOME_EXT" ]; then
+        sudo git clone --depth 1 --branch $OE_VERSION https://www.github.com/odoo/odoo $OE_HOME_EXT/
+    else
+        echo " Directory $OE_HOME_EXT exists. Passing..."
+    fi
+    
     sudo -u $OE_USER $VENV_DIR/bin/pip3 install -r $OE_HOME_EXT/requirements.txt
 
     if [ "$IS_ENTERPRISE" = "True" ]; then
         log "INFO" "Installing Odoo Enterprise"
         sudo -u $OE_USER $VENV_DIR/bin/pip3 install psycopg2-binary pdfminer.six
-        sudo rm /usr/bin/node
-        sudo ln -s /usr/bin/nodejs /usr/bin/node
         sudo su $OE_USER -c "mkdir $OE_HOME/enterprise"
         sudo su $OE_USER -c "mkdir $OE_HOME/enterprise/addons"
         GITHUB_RESPONSE="False"
