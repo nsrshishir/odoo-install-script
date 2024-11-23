@@ -31,7 +31,7 @@ OE_SUPERADMIN="admin"
 GENERATE_RANDOM_PASSWORD="True"
 OE_CONFIG="${OE_USER}-server"
 WEBSITE_NAME="_"
-LONGPOLLING_PORT="8072"
+GEVENTE_PORT="8072"
 ENABLE_SSL="False"
 ADMIN_EMAIL="odoo@example.com"
 WKHTMLTOX_X64="https://github.com/wkhtmltopdf/packaging/releases/download/0.12.6.1-2/wkhtmltox_0.12.6.1-2.jammy_amd64.deb"
@@ -147,13 +147,13 @@ create_config_file() {
     sudo su root -c "printf '[options] \n; This is the password that allows database operations:\n' >> /etc/${OE_CONFIG}.conf"
     if [ "$GENERATE_RANDOM_PASSWORD" = "True" ]; then
         log "INFO" "Generating random admin password"
-        OE_SUPERADMIN=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 16 | head -n 1)
+        OE_SUPERADMIN=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 20 | head -n 1)
     fi
     sudo su root -c "printf 'admin_passwd = ${OE_SUPERADMIN}\n' >> /etc/${OE_CONFIG}.conf"
     if [ "$OE_VERSION" > "11.0" ]; then
         sudo su root -c "printf 'http_interface = 127.0.0.1\n' >> /etc/${OE_CONFIG}.conf"
         sudo su root -c "printf 'http_port = ${OE_PORT}\n' >> /etc/${OE_CONFIG}.conf"
-        sudo su root -c "printf 'gevent_port = ${LONGPOLLING_PORT}\n' >> /etc/${OE_CONFIG}.conf"
+        sudo su root -c "printf 'gevent_port = ${GEVENTE_PORT}\n' >> /etc/${OE_CONFIG}.conf"
     else
         sudo su root -c "printf 'xmlrpc_port = ${OE_PORT}\n' >> /etc/${OE_CONFIG}.conf"
     fi
@@ -265,8 +265,8 @@ install_nginx() {
   upstream odooserver {
       server 127.0.0.1:$OE_PORT;
   }
-  upstream odoolongpoll {
-      server 127.0.0.1:$LONGPOLLING_PORT;
+  upstream odoochat {
+      server 127.0.0.1:$GEVENTE_PORT;
   }
   map \$http_upgrade \$connection_upgrade {
   default upgrade;
@@ -326,7 +326,7 @@ install_nginx() {
   }
 
   location /websocket {
-  proxy_pass http://odoolongpoll;
+  proxy_pass http://odoochat;
   proxy_redirect off;
   proxy_set_header Upgrade \$http_upgrade;
   proxy_set_header Connection \$connection_upgrade;
