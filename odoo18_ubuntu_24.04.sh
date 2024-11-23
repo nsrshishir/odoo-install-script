@@ -176,22 +176,18 @@ create_config_file() {
     else
         echo "Odoo configuration file is at /etc/${OE_CONFIG}.conf ..."
     fi
-    sudo cp $OE_HOME_EXT/debian/odoo.conf /etc/${OE_CONFIG}.conf
+    # sudo cp $OE_HOME_EXT/debian/odoo.conf /etc/${OE_CONFIG}.conf
 
-    # sudo touch /etc/${OE_CONFIG}.conf
-    # sudo su root -c "printf '[options] \n; This is the password that allows database operations:\n' >> /etc/${OE_CONFIG}.conf"
+    sudo touch /etc/${OE_CONFIG}.conf
+    sudo su root -c "printf '[options] \n; This is the password that allows database operations:\n' >> /etc/${OE_CONFIG}.conf"
     if [ "$GENERATE_RANDOM_PASSWORD" = "True" ]; then
         log "INFO" "Generating random admin password"
-        OE_SUPERADMIN="wn4VWh2OBjUUn2nZEKF79Nsjn"
+        OE_SUPERADMIN=$(openssl rand -hex 20)
     fi
     sudo su root -c "printf 'admin_passwd = ${OE_SUPERADMIN}\n' >> /etc/${OE_CONFIG}.conf"
-    # if [ "$OE_VERSION" ] >"11.0"; then
-    #     sudo su root -c "printf 'http_interface = 127.0.0.1\n' >> /etc/${OE_CONFIG}.conf"
-    #     sudo su root -c "printf 'http_port = ${OE_PORT}\n' >> /etc/${OE_CONFIG}.conf"
-    #     sudo su root -c "printf 'gevent_port = ${LONGPOLLING_PORT}\n' >> /etc/${OE_CONFIG}.conf"
-    # else
-    #     sudo su root -c "printf 'xmlrpc_port = ${OE_PORT}\n' >> /etc/${OE_CONFIG}.conf"
-    # fi
+    sudo su root -c "printf 'http_interface = 127.0.0.1\n' >> /etc/${OE_CONFIG}.conf"
+    sudo su root -c "printf 'http_port = ${OE_PORT}\n' >> /etc/${OE_CONFIG}.conf"
+    sudo su root -c "printf 'gevent_port = ${LONGPOLLING_PORT}\n' >> /etc/${OE_CONFIG}.conf"
     sudo su root -c "printf 'logfile = /var/log/${OE_USER}/${OE_CONFIG}.log\n' >> /etc/${OE_CONFIG}.conf"
 
     if [ "$IS_ENTERPRISE" = "True" ]; then
