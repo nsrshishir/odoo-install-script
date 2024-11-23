@@ -147,7 +147,7 @@ install_odoo() {
         else
             echo " Directory $OE_HOME/enterprise exists. Passing..."
         fi
-        
+
         # GITHUB_RESPONSE="False"
         # while [[ $GITHUB_RESPONSE == *"Authentication"* ]]; do
         #     log "WARNING" "Your authentication with Github has failed! Please try again."
@@ -200,7 +200,14 @@ create_config_file() {
 # Create Odoo startup file
 create_startup_file() {
     log "INFO" "Creating Odoo startup file"
-    sudo rm $OE_HOME_EXT/start.sh
+
+    if [ -f "$OE_HOME_EXT/start.sh" ]; then
+
+        sudo rm $OE_HOME_EXT/start.sh
+    else
+        echo "Odoo startup file is at $OE_HOME_EXT/start.sh ..."
+    fi
+
     sudo su root -c "echo '#!/bin/sh' >> $OE_HOME_EXT/start.sh"
     sudo su root -c "echo 'sudo -u $OE_USER $VENV_DIR/bin/python $OE_HOME_EXT/odoo-bin --config=/etc/${OE_CONFIG}.conf' >> $OE_HOME_EXT/start.sh"
     sudo chmod 755 $OE_HOME_EXT/start.sh
@@ -274,7 +281,13 @@ exit 1
 esac
 exit 0
 EOF
-    sudo rm /etc/init.d/$OE_CONFIG
+
+    if [ -f "/etc/init.d/$OE_CONFIG" ]; then
+        sudo rm /etc/init.d/$OE_CONFIG
+    else
+        echo "Odoo init script file is at /etc/init.d/$OE_CONFIG ..."
+    fi
+
     sudo mv ~/$OE_CONFIG /etc/init.d/$OE_CONFIG
     sudo chmod 755 /etc/init.d/$OE_CONFIG
     sudo chown root: /etc/init.d/$OE_CONFIG
@@ -377,7 +390,12 @@ install_nginx() {
   }
   }
 EOF
-        sudo rm /etc/nginx/conf.d/odoo.conf
+        if [ -f "/etc/nginx/conf.d/odoo.conf" ]; then
+            sudo rm /etc/nginx/conf.d/odoo.conf
+        else
+            echo "Odoo Nginx configuration file is at /etc/nginx/conf.d/odoo.conf ..."
+        fi
+
         sudo mv ~/odoo.conf /etc/nginx/conf.d/
         sudo rm /etc/nginx/conf.d/default.conf
         sudo service nginx reload
@@ -404,6 +422,12 @@ enable_ssl() {
 install_logrotate() {
     log "INFO" "Installing logrotate"
     sudo apt-get install -y logrotate
+    if [ -f "/etc/logrotate.d/odoo" ]; then
+        sudo rm /etc/logrotate.d/odoo
+    else
+        echo "Odoo logrotate file is at /etc/logrotate.d/odoo ..."
+    fi
+
     cat <<EOF >/etc/logrotate.d/odoo
    /var/log/${OE_USER}/${OE_CONFIG}.log {
         daily
