@@ -177,10 +177,8 @@ create_config_file() {
         echo "Odoo configuration file is at /etc/${OE_CONFIG}.conf ..."
     fi
 
-    if [ "$GENERATE_RANDOM_PASSWORD" = "True" ]; then
-        log "INFO" "Generating random admin password"
-        OE_SUPERADMIN=$(< /dev/urandom tr -dc 'a-zA-Z0-9' | head -c 20)
-    fi
+    OE_SUPERADMIN=$(< /dev/urandom tr -dc 'a-zA-Z0-9' | head -c 20)
+    
     sudo touch /etc/${OE_CONFIG}.conf
     sudo su root -c "printf '[options] \n; This is the password that allows database operations:\n' >> /etc/${OE_CONFIG}.conf"
     sudo su root -c "printf 'admin_passwd = ${OE_SUPERADMIN}\n' >> /etc/${OE_CONFIG}.conf"
