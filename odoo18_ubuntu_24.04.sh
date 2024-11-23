@@ -76,7 +76,7 @@ install_postgresql() {
 # Install dependencies
 install_dependencies() {
     log "INFO" "Installing Python 3 and other dependencies"
-    sudo apt-get install git python3 python3-pip build-essential wget python3-dev python3-venv python3-wheel python3-cffi libssl3 libxslt1-dev libzip-dev libldap2-dev libsasl2-dev python3-setuptools node-less libpng-dev libjpeg-dev gdebi -y
+    sudo apt-get install git python3 python3-pip build-essential wget python3-dev python3-venv python3-wheel python3-cffi libssl3 libxslt1-dev libzip-dev libldap2-dev libsasl2-dev python3-setuptools nodejs npm node-less libpng-dev libjpeg-dev gdebi -y
     sudo apt install fonts-beng -y
 }
 
@@ -122,7 +122,6 @@ install_odoo() {
     if [ "$IS_ENTERPRISE" = "True" ]; then
         log "INFO" "Installing Odoo Enterprise"
         sudo -u $OE_USER $VENV_DIR/bin/pip install psycopg2-binary pdfminer.six
-        sudo ln -s /usr/bin/nodejs /usr/bin/node
         sudo su $OE_USER -c "mkdir $OE_HOME/enterprise"
         sudo su $OE_USER -c "mkdir $OE_HOME/enterprise/addons"
         GITHUB_RESPONSE="False"
