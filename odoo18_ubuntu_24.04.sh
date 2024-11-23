@@ -177,8 +177,8 @@ create_config_file() {
         echo "Odoo configuration file is at /etc/${OE_CONFIG}.conf ..."
     fi
 
-    OE_SUPERADMIN=$(< /dev/urandom tr -dc 'a-zA-Z0-9' | head -c 20)
-    
+    OE_SUPERADMIN=$(tr -dc 'a-zA-Z0-9' < /dev/urandom | fold -w 20 | head -n 1)
+
     sudo touch /etc/${OE_CONFIG}.conf
     sudo su root -c "printf '[options] \n; This is the password that allows database operations:\n' >> /etc/${OE_CONFIG}.conf"
     sudo su root -c "printf 'admin_passwd = ${OE_SUPERADMIN}\n' >> /etc/${OE_CONFIG}.conf"
