@@ -119,18 +119,19 @@ create_virtual_environment() {
     log "INFO" "Creating Python virtual environment"
     sudo -u $OE_USER python3 -m venv $VENV_DIR
     sudo chown -R $OE_USER:$OE_USER $VENV_DIR
-    sudo -u $OE_USER $VENV_DIR/bin/pip install --upgrade pip
-    sudo -u $OE_USER $VENV_DIR/bin/pip install html2text
+    sudo -u $OE_USER $VENV_DIR/bin/pip3 install --upgrade pip
+    sudo -u $OE_USER $VENV_DIR/bin/pip3 install html2text
 }
 
 # Install Odoo
 install_odoo() {
     log "INFO" "Installing Odoo Server"
     sudo git clone --depth 1 --branch $OE_VERSION https://www.github.com/odoo/odoo $OE_HOME_EXT/
+    sudo -u $OE_USER $VENV_DIR/bin/pip3 install -r $OE_HOME_EXT/requirements.txt
 
     if [ "$IS_ENTERPRISE" = "True" ]; then
         log "INFO" "Installing Odoo Enterprise"
-        sudo -u $OE_USER $VENV_DIR/bin/pip install psycopg2-binary pdfminer.six
+        sudo -u $OE_USER $VENV_DIR/bin/pip3 install psycopg2-binary pdfminer.six
         sudo rm /usr/bin/node
         sudo ln -s /usr/bin/nodejs /usr/bin/node
         sudo su $OE_USER -c "mkdir $OE_HOME/enterprise"
@@ -140,7 +141,7 @@ install_odoo() {
             log "WARNING" "Your authentication with Github has failed! Please try again."
             GITHUB_RESPONSE=$(sudo git clone --depth 1 --branch $OE_VERSION https://www.github.com/odoo/enterprise "$OE_HOME/enterprise/addons" 2>&1)
         done
-        sudo -u $OE_USER $VENV_DIR/bin/pip install num2words ofxparse dbfread ebaysdk firebase_admin pyOpenSSL
+        sudo -u $OE_USER $VENV_DIR/bin/pip3 install num2words ofxparse dbfread ebaysdk firebase_admin pyOpenSSL
         sudo npm install -g less
         sudo npm install -g less-plugin-clean-css
     fi
@@ -153,11 +154,12 @@ install_odoo() {
 # Create Odoo configuration file
 create_config_file() {
     log "INFO" "Creating Odoo configuration file"
+    sudo rm /etc/${OE_CONFIG}.conf
     sudo touch /etc/${OE_CONFIG}.conf
     sudo su root -c "printf '[options] \n; This is the password that allows database operations:\n' >> /etc/${OE_CONFIG}.conf"
     if [ "$GENERATE_RANDOM_PASSWORD" = "True" ]; then
         log "INFO" "Generating random admin password"
-        OE_SUPERADMIN=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 16 | head -n 1)
+        OE_SUPERADMIN=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 2 | head -n 1)
     fi
     sudo su root -c "printf 'admin_passwd = ${OE_SUPERADMIN}\n' >> /etc/${OE_CONFIG}.conf"
     if [ "$OE_VERSION" ] >"11.0"; then
@@ -170,7 +172,7 @@ create_config_file() {
     sudo su root -c "printf 'logfile = /var/log/${OE_USER}/${OE_CONFIG}.log\n' >> /etc/${OE_CONFIG}.conf"
 
     if [ "$IS_ENTERPRISE" = "True" ]; then
-        sudo su root -c "printf 'addons_path=${OE_HOME}/enterprise/addons,${OE_HOME_EXT}/addons,${OE_HOME}/custom/addons\n' >> /etc/${OE_CONFIG}.conf"
+        sudo su root -c "printf 'addons_path=${OE_HOME_EXT}/addons,${OE_HOME}/enterprise/addons,${OE_HOME}/custom/addons\n' >> /etc/${OE_CONFIG}.conf"
     else
         sudo su root -c "printf 'addons_path=${OE_HOME_EXT}/addons,${OE_HOME}/custom/addons\n' >> /etc/${OE_CONFIG}.conf"
     fi
@@ -181,6 +183,7 @@ create_config_file() {
 # Create Odoo startup file
 create_startup_file() {
     log "INFO" "Creating Odoo startup file"
+    sudo rm $OE_HOME_EXT/start.sh
     sudo su root -c "echo '#!/bin/sh' >> $OE_HOME_EXT/start.sh"
     sudo su root -c "echo 'sudo -u $OE_USER $VENV_DIR/bin/python $OE_HOME_EXT/odoo-bin --config=/etc/${OE_CONFIG}.conf' >> $OE_HOME_EXT/start.sh"
     sudo chmod 755 $OE_HOME_EXT/start.sh
@@ -254,6 +257,7 @@ exit 1
 esac
 exit 0
 EOF
+    sudo rm /etc/init.d/$OE_CONFIG
     sudo mv ~/$OE_CONFIG /etc/init.d/$OE_CONFIG
     sudo chmod 755 /etc/init.d/$OE_CONFIG
     sudo chown root: /etc/init.d/$OE_CONFIG
@@ -268,8 +272,7 @@ install_nginx() {
         gpg --dry-run --quiet --no-keyring --import --import-options import-show /usr/share/keyrings/nginx-archive-keyring.gpg
         echo "deb [signed-by=/usr/share/keyrings/nginx-archive-keyring.gpg] http://nginx.org/packages/ubuntu $(lsb_release -cs) nginx" | sudo tee /etc/apt/sources.list.d/nginx.list
         sudo apt update
-        sudo apt install nginx -y
-        sudo -H pip3 install certbot certbot-nginx
+        sudo apt install nginx python3-certbot python3-certbot-nginx -y
 
         cat <<EOF >~/odoo.conf
   upstream odooserver {
@@ -357,7 +360,7 @@ install_nginx() {
   }
   }
 EOF
-
+        sudo rm /etc/nginx/conf.d/odoo.conf
         sudo mv ~/odoo.conf /etc/nginx/conf.d/
         sudo rm /etc/nginx/conf.d/default.conf
         sudo service nginx reload
