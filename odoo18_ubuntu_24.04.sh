@@ -77,8 +77,6 @@ install_postgresql() {
 install_dependencies() {
     log "INFO" "Installing Python 3 and other dependencies"
     sudo apt-get install git python3 python3-pip build-essential wget python3-dev python3-venv python3-wheel python3-cffi libssl3 libxslt1-dev libzip-dev libldap2-dev libsasl2-dev python3-setuptools node-less libpng-dev libjpeg-dev gdebi -y
-    sudo pip3 install --upgrade pip
-    sudo pip3 install html2text
     sudo apt install fonts-beng -y
 }
 
@@ -118,6 +116,8 @@ create_virtual_environment() {
 install_odoo() {
     log "INFO" "Installing Odoo Server"
     sudo git clone --depth 1 --branch $OE_VERSION https://www.github.com/odoo/odoo $OE_HOME_EXT/
+    sudo -u $OE_USER $VENV_DIR/bin/pip install --upgrade pip
+    sudo -u $OE_USER $VENV_DIR/bin/pip install html2text
 
     if [ "$IS_ENTERPRISE" = "True" ]; then
         log "INFO" "Installing Odoo Enterprise"
