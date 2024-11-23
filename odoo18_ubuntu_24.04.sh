@@ -127,6 +127,7 @@ create_virtual_environment() {
 # Install Odoo
 install_odoo() {
     log "INFO" "Installing Odoo Server"
+    rm -r $OE_HOME_EXT
     sudo git clone --depth 1 --branch $OE_VERSION https://www.github.com/odoo/odoo $OE_HOME_EXT/
     sudo -u $OE_USER $VENV_DIR/bin/pip3 install -r $OE_HOME_EXT/requirements.txt
 
