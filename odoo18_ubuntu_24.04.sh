@@ -404,7 +404,7 @@ EOF
 
         sudo mv ~/odoo.conf /etc/nginx/conf.d/
         sudo rm /etc/nginx/conf.d/default.conf
-        sudo service nginx reload
+        sudo service nginx restart
         sudo su root -c "printf 'proxy_mode = True\n' >> /etc/${OE_CONFIG}.conf"
         log "INFO" "Nginx server is up and running. Configuration can be found at /etc/nginx/conf.d/odoo.conf"
     else
@@ -417,7 +417,7 @@ enable_ssl() {
     if [ "$INSTALL_NGINX" = "True" ] && [ "$ENABLE_SSL" = "True" ] && [ "$ADMIN_EMAIL" != "odoo@example.com" ] && [ "$WEBSITE_NAME" != "_" ]; then
         log "INFO" "Enabling SSL with Certbot"
         sudo certbot --nginx -d $WEBSITE_NAME --noninteractive --agree-tos --email $ADMIN_EMAIL --redirect
-        sudo service nginx reload
+        sudo service nginx restart
         log "INFO" "SSL/HTTPS is enabled!"
     else
         log "INFO" "SSL/HTTPS isn't enabled due to choice of the user or because of a misconfiguration!"
