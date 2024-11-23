@@ -130,26 +130,30 @@ create_virtual_environment() {
 # Install Odoo
 install_odoo() {
     log "INFO" "Installing Odoo Server"
-    rm -r $OE_HOME_EXT
     if [ ! -d "$OE_HOME_EXT" ]; then
         sudo git clone --depth 1 --branch $OE_VERSION https://www.github.com/odoo/odoo $OE_HOME_EXT/
     else
         echo " Directory $OE_HOME_EXT exists. Passing..."
     fi
-    
+
     sudo -u $OE_USER $VENV_DIR/bin/pip3 install -r $OE_HOME_EXT/requirements.txt
 
     if [ "$IS_ENTERPRISE" = "True" ]; then
         log "INFO" "Installing Odoo Enterprise"
         sudo -u $OE_USER $VENV_DIR/bin/pip3 install psycopg2-binary pdfminer.six
-        sudo su $OE_USER -c "mkdir $OE_HOME/enterprise"
-        sudo su $OE_USER -c "mkdir $OE_HOME/enterprise/addons"
-        GITHUB_RESPONSE="False"
-        while [[ $GITHUB_RESPONSE == *"Authentication"* ]]; do
-            log "WARNING" "Your authentication with Github has failed! Please try again."
-            GITHUB_RESPONSE=$(sudo git clone --depth 1 --branch $OE_VERSION https://www.github.com/odoo/enterprise "$OE_HOME/enterprise/addons" 2>&1)
-        done
-        sudo -u $OE_USER $VENV_DIR/bin/pip3 install num2words ofxparse dbfread ebaysdk firebase_admin pyOpenSSL
+        if [ ! -d "$OE_HOME/enterprise" ]; then
+            sudo su $OE_USER -c "mkdir $OE_HOME/enterprise"
+            sudo su $OE_USER -c "mkdir $OE_HOME/enterprise/addons"
+        else
+            echo " Directory $OE_HOME/enterprise exists. Passing..."
+        fi
+        
+        # GITHUB_RESPONSE="False"
+        # while [[ $GITHUB_RESPONSE == *"Authentication"* ]]; do
+        #     log "WARNING" "Your authentication with Github has failed! Please try again."
+        #     GITHUB_RESPONSE=$(sudo git clone --depth 1 --branch $OE_VERSION https://www.github.com/odoo/enterprise "$OE_HOME/enterprise/addons" 2>&1)
+        # done
+        # sudo -u $OE_USER $VENV_DIR/bin/pip3 install num2words ofxparse dbfread ebaysdk firebase_admin pyOpenSSL
         sudo npm install -g less
         sudo npm install -g less-plugin-clean-css
     fi
@@ -167,7 +171,7 @@ create_config_file() {
     sudo su root -c "printf '[options] \n; This is the password that allows database operations:\n' >> /etc/${OE_CONFIG}.conf"
     if [ "$GENERATE_RANDOM_PASSWORD" = "True" ]; then
         log "INFO" "Generating random admin password"
-        OE_SUPERADMIN=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 2 | head -n 1)
+        OE_SUPERADMIN=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 20 | head -n 1)
     fi
     sudo su root -c "printf 'admin_passwd = ${OE_SUPERADMIN}\n' >> /etc/${OE_CONFIG}.conf"
     if [ "$OE_VERSION" ] >"11.0"; then
@@ -308,7 +312,7 @@ install_nginx() {
 
   #   odoo    log files
   access_log  /var/log/nginx/$OE_USER-access.log;
-  error_log       /var/log/nginx/$OE_USER-error.log;
+  error_log   /var/log/nginx/$OE_USER-error.log;
 
   #   increase    proxy   buffer  size
   proxy_buffers   16  64k;
