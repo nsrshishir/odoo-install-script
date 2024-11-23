@@ -31,7 +31,7 @@ OE_SUPERADMIN="admin"
 GENERATE_RANDOM_PASSWORD="True"
 OE_CONFIG="${OE_USER}-server"
 WEBSITE_NAME="_"
-GEVENTE_PORT="8072"
+LONGPOLLING_PORT="8072"
 ENABLE_SSL="False"
 ADMIN_EMAIL="odoo@example.com"
 WKHTMLTOX_X64="https://github.com/wkhtmltopdf/packaging/releases/download/0.12.6.1-2/wkhtmltox_0.12.6.1-2.jammy_amd64.deb"
@@ -76,8 +76,15 @@ install_postgresql() {
 # Install dependencies
 install_dependencies() {
     log "INFO" "Installing Python 3 and other dependencies"
-    sudo apt-get install git python3 python3-pip build-essential wget python3-dev python3-venv python3-wheel python3-cffi libssl3 libxslt1-dev libzip-dev libldap2-dev libsasl2-dev python3-setuptools nodejs npm node-less libpng-dev libjpeg-dev gdebi -y
+    sudo apt-get install git python3 python3-pip build-essential wget python3-dev python3-venv python3-wheel python3-cffi libssl3 libxslt1-dev libzip-dev libldap2-dev libsasl2-dev python3-setuptools libpng-dev libjpeg-dev gdebi -y
     sudo apt install fonts-beng -y
+}
+
+# Install Node.js and npm
+install_nodejs() {
+    log "INFO" "Installing Node.js and npm"
+    # curl -fsSL https://deb.nodesource.com/setup_lts.x | sudo -E bash -
+    sudo apt-get install -y nodejs npm node-less
 }
 
 # Install Wkhtmltopdf
@@ -89,6 +96,8 @@ install_wkhtmltopdf() {
         fi
         sudo wget $_url
         sudo gdebi --n $(basename $_url)
+        sudo rm -f /usr/bin/wkhtmltopdf
+        sudo rm -f /usr/bin/wkhtmltoimage
         sudo ln -s /usr/local/bin/wkhtmltopdf /usr/bin
         sudo ln -s /usr/local/bin/wkhtmltoimage /usr/bin
     else
@@ -110,18 +119,20 @@ create_virtual_environment() {
     log "INFO" "Creating Python virtual environment"
     sudo -u $OE_USER python3 -m venv $VENV_DIR
     sudo chown -R $OE_USER:$OE_USER $VENV_DIR
+    sudo -u $OE_USER $VENV_DIR/bin/pip install --upgrade pip
+    sudo -u $OE_USER $VENV_DIR/bin/pip install html2text
 }
 
 # Install Odoo
 install_odoo() {
     log "INFO" "Installing Odoo Server"
     sudo git clone --depth 1 --branch $OE_VERSION https://www.github.com/odoo/odoo $OE_HOME_EXT/
-    sudo -u $OE_USER $VENV_DIR/bin/pip install --upgrade pip
-    sudo -u $OE_USER $VENV_DIR/bin/pip install html2text
 
     if [ "$IS_ENTERPRISE" = "True" ]; then
         log "INFO" "Installing Odoo Enterprise"
         sudo -u $OE_USER $VENV_DIR/bin/pip install psycopg2-binary pdfminer.six
+        sudo rm /usr/bin/node
+        sudo ln -s /usr/bin/nodejs /usr/bin/node
         sudo su $OE_USER -c "mkdir $OE_HOME/enterprise"
         sudo su $OE_USER -c "mkdir $OE_HOME/enterprise/addons"
         GITHUB_RESPONSE="False"
@@ -146,13 +157,13 @@ create_config_file() {
     sudo su root -c "printf '[options] \n; This is the password that allows database operations:\n' >> /etc/${OE_CONFIG}.conf"
     if [ "$GENERATE_RANDOM_PASSWORD" = "True" ]; then
         log "INFO" "Generating random admin password"
-        OE_SUPERADMIN=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 20 | head -n 1)
+        OE_SUPERADMIN=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 16 | head -n 1)
     fi
     sudo su root -c "printf 'admin_passwd = ${OE_SUPERADMIN}\n' >> /etc/${OE_CONFIG}.conf"
-    if [ "$OE_VERSION" > "11.0" ]; then
+    if [ "$OE_VERSION" ] >"11.0"; then
         sudo su root -c "printf 'http_interface = 127.0.0.1\n' >> /etc/${OE_CONFIG}.conf"
         sudo su root -c "printf 'http_port = ${OE_PORT}\n' >> /etc/${OE_CONFIG}.conf"
-        sudo su root -c "printf 'gevent_port = ${GEVENTE_PORT}\n' >> /etc/${OE_CONFIG}.conf"
+        sudo su root -c "printf 'gevent_port = ${LONGPOLLING_PORT}\n' >> /etc/${OE_CONFIG}.conf"
     else
         sudo su root -c "printf 'xmlrpc_port = ${OE_PORT}\n' >> /etc/${OE_CONFIG}.conf"
     fi
@@ -264,8 +275,8 @@ install_nginx() {
   upstream odooserver {
       server 127.0.0.1:$OE_PORT;
   }
-  upstream odoochat {
-      server 127.0.0.1:$GEVENTE_PORT;
+  upstream odoolongpoll {
+      server 127.0.0.1:$LONGPOLLING_PORT;
   }
   map \$http_upgrade \$connection_upgrade {
   default upgrade;
@@ -325,7 +336,7 @@ install_nginx() {
   }
 
   location /websocket {
-  proxy_pass http://odoochat;
+  proxy_pass http://odoolongpoll;
   proxy_redirect off;
   proxy_set_header Upgrade \$http_upgrade;
   proxy_set_header Connection \$connection_upgrade;
@@ -412,6 +423,7 @@ main() {
     update_server
     install_postgresql
     install_dependencies
+    install_nodejs
     install_wkhtmltopdf
     create_odoo_user
     create_virtual_environment
