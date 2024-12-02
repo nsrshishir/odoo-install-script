@@ -76,7 +76,7 @@ install_postgresql() {
 # Install dependencies
 install_dependencies() {
     log "INFO" "Installing Python 3 and other dependencies"
-    sudo apt-get install git python3 python3-pip build-essential wget python3-dev python3-venv python3-wheel python3-cffi libssl3 libxslt1-dev libzip-dev libldap2-dev libsasl2-dev python3-setuptools libpng-dev libjpeg-dev gdebi -y
+    sudo apt install git python3 python3-pip build-essential wget python3-dev python3-venv python3-wheel python3-cffi libssl3 libxslt1-dev libzip-dev libldap2-dev libsasl2-dev python3-setuptools libpng-dev libjpeg-dev gdebi -y
     sudo apt install fonts-beng -y
 }
 
@@ -219,81 +219,34 @@ create_startup_file() {
 create_init_script() {
     log "INFO" "Creating Odoo init script"
     cat <<EOF >~/$OE_CONFIG
-#!/bin/sh
-### BEGIN INIT INFO
-# Provides: $OE_CONFIG
-# Required-Start: \$remote_fs \$syslog
-# Required-Stop: \$remote_fs \$syslog
-# Should-Start: \$network
-# Should-Stop: \$network
-# Default-Start: 2 3 4 5
-# Default-Stop: 0 1 6
-# Short-Description: Enterprise Business Applications
-# Description: ODOO Business Applications
-### END INIT INFO
-PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin
-DAEMON=$VENV_DIR/bin/python $OE_HOME_EXT/odoo-bin
-NAME=$OE_CONFIG
-DESC=$OE_CONFIG
-# Specify the user name (Default: odoo).
-USER=$OE_USER
-# Specify an alternate config file (Default: /etc/openerp-server.conf).
-CONFIGFILE="/etc/${OE_CONFIG}.conf"
-# pidfile
-PIDFILE=/var/run/\${NAME}.pid
-# Additional options that are passed to the Daemon.
-DAEMON_OPTS="-c \$CONFIGFILE"
-[ -x \$DAEMON ] || exit 0
-[ -f \$CONFIGFILE ] || exit 0
-checkpid() {
-[ -f \$PIDFILE ] || return 1
-pid=\`cat \$PIDFILE\`
-[ -d /proc/\$pid ] && return 0
-return 1
-}
-case "\${1}" in
-start)
-echo -n "Starting \${DESC}: "
-start-stop-daemon --start --quiet --pidfile \$PIDFILE \
---chuid \$USER --background --make-pidfile \
---exec \$DAEMON -- \$DAEMON_OPTS
-echo "\${NAME}."
-;;
-stop)
-echo -n "Stopping \${DESC}: "
-start-stop-daemon --stop --quiet --pidfile \$PIDFILE \
---oknodo
-echo "\${NAME}."
-;;
-restart|force-reload)
-echo -n "Restarting \${DESC}: "
-start-stop-daemon --stop --quiet --pidfile \$PIDFILE \
---oknodo
-sleep 1
-start-stop-daemon --start --quiet --pidfile \$PIDFILE \
---chuid \$USER --background --make-pidfile \
---exec \$DAEMON -- \$DAEMON_OPTS
-echo "\${NAME}."
-;;
-*)
-N=/etc/init.d/\$NAME
-echo "Usage: \$NAME {start|stop|restart|force-reload}" >&2
-exit 1
-;;
-esac
-exit 0
+[Unit]
+Description=Odoo Server
+After=network.target postgresql.service
+Requires=postgresql.service
+
+[Service]
+Type=simple
+User=odoo
+Group=odoo
+WorkingDirectory=$OE_HOME_EXT
+Environment="PATH=$VENV_DIR/bin:/usr/bin:/bin"
+ExecStart=$VENV_DIR/bin/python3 $OE_HOME_EXT/odoo-bin -c /etc/${OE_CONFIG}.conf
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
 EOF
 
-    if [ -f "/etc/init.d/$OE_CONFIG" ]; then
-        sudo rm /etc/init.d/$OE_CONFIG
+    if [ -f "/etc/systemd/system/$OE_CONFIG.service" ]; then
+        sudo rm /etc/systemd/system/$OE_CONFIG.service
     else
-        echo "Odoo init script file is at /etc/init.d/$OE_CONFIG ..."
+        echo "Odoo init script file is at /etc/systemd/system/$OE_CONFIG.service ..."
     fi
 
-    sudo mv ~/$OE_CONFIG /etc/init.d/$OE_CONFIG
-    sudo chmod 755 /etc/init.d/$OE_CONFIG
-    sudo chown root: /etc/init.d/$OE_CONFIG
-    sudo update-rc.d $OE_CONFIG defaults
+    sudo mv ~/$OE_CONFIG /etc/systemd/system/$OE_CONFIG.service
+    sudo chmod 755 /etc/systemd/system/$OE_CONFIG.service
+    sudo chown root: /etc/systemd/system/$OE_CONFIG.service
 }
 
 # Install and configure Nginx
@@ -403,7 +356,7 @@ EOF
         fi
 
         sudo mv ~/odoo.conf /etc/nginx/conf.d/
-        sudo service nginx restart
+        # sudo service nginx restart
         sudo su root -c "printf 'proxy_mode = True\n' >> /etc/${OE_CONFIG}.conf"
         log "INFO" "Nginx server is up and running. Configuration can be found at /etc/nginx/conf.d/odoo.conf"
     else
@@ -449,7 +402,9 @@ EOF
 # Start Odoo service
 start_odoo_service() {
     log "INFO" "Starting Odoo service"
-    sudo su root -c "/etc/init.d/$OE_CONFIG start"
+    sudo systemctl daemon-reload
+    sudo systemctl enable $OE_CONFIG.service
+    sudo systemctl start $OE_CONFIG.service
     log "INFO" "Odoo server is up and running. Specifications:"
     log "INFO" "Port: $OE_PORT"
     log "INFO" "User service: $OE_USER"
@@ -463,6 +418,8 @@ start_odoo_service() {
     log "INFO" "Stop Odoo service: sudo service $OE_CONFIG stop"
     log "INFO" "Restart Odoo service: sudo service $OE_CONFIG restart"
     if [ "$INSTALL_NGINX" = "True" ]; then
+        sudo systemctl enable nginx.service
+        sudo systemctl start nginx.service
         log "INFO" "Nginx configuration file: /etc/nginx/conf.d/odoo.conf"
     fi
 }
