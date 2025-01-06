@@ -189,6 +189,11 @@ create_config_file() {
     sudo su root -c "printf 'http_port = ${OE_PORT}\n' >> /etc/${OE_CONFIG}.conf"
     sudo su root -c "printf 'gevent_port = ${LONGPOLLING_PORT}\n' >> /etc/${OE_CONFIG}.conf"
     sudo su root -c "printf 'logfile = /var/log/${OE_USER}/${OE_CONFIG}.log\n' >> /etc/${OE_CONFIG}.conf"
+    sudo su root -c "printf '#limit_memory_hard = 1677721600\n' >> /etc/${OE_CONFIG}.conf"
+    sudo su root -c "printf '#limit_memory_soft = 629145600\n' >> /etc/${OE_CONFIG}.conf"
+    sudo su root -c "printf 'limit_request = 8192\n' >> /etc/${OE_CONFIG}.conf"
+    sudo su root -c "printf 'limit_time_cpu = 600\n' >> /etc/${OE_CONFIG}.conf"
+    sudo su root -c "printf 'limit_time_real = 1200\n' >> /etc/${OE_CONFIG}.conf"
 
     if [ "$IS_ENTERPRISE" = "True" ]; then
         sudo su root -c "printf 'addons_path=${OE_HOME_EXT}/addons,${OE_HOME}/enterprise/addons,${OE_HOME}/custom/addons\n' >> /etc/${OE_CONFIG}.conf"
@@ -260,90 +265,60 @@ install_nginx() {
         sudo apt install nginx python3-certbot python3-certbot-nginx -y
 
         cat <<EOF >~/odoo.conf
-  upstream odooserver {
-      server 127.0.0.1:$OE_PORT;
-  }
-  upstream odoolongpoll {
-      server 127.0.0.1:$LONGPOLLING_PORT;
-  }
-  map \$http_upgrade \$connection_upgrade {
-  default upgrade;
-  ''      close;
-  }
+  upstream odoo {
+    server 127.0.0.1:8069;
+}
+upstream odoochat {
+    server 127.0.0.1:8072;
+}
+map $http_upgrade $connection_upgrade {
+    default upgrade;
+    '' close;
+}
 
-  server {
-  listen 80;
+server {
+    listen 80;
+    server_name $WEBSITE_NAME;
+    proxy_read_timeout 720s;
+    proxy_connect_timeout 720s;
+    proxy_send_timeout 720s;
 
-  # set proper server name after domain set
-  server_name $WEBSITE_NAME;
+    # log
+    access_log /var/log/nginx/odoo-access.log;
+    error_log /var/log/nginx/odoo-error.log;
 
-  # Add Headers for odoo proxy mode
-  proxy_set_header X-Forwarded-Host \$host;
-  proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
-  proxy_set_header X-Forwarded-Proto \$scheme;
-  proxy_set_header X-Real-IP \$remote_addr;
+    # Redirect websocket requests to odoo gevent port
+    location /websocket {
+        proxy_pass http://odoochat;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection $connection_upgrade;
+        proxy_set_header X-Forwarded-Host $http_host;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Real-IP $remote_addr;
 
-  #   odoo    log files
-  access_log  /var/log/nginx/$OE_USER-access.log;
-  error_log   /var/log/nginx/$OE_USER-error.log;
+        #add_header Strict-Transport-Security "max-age=31536000; includeSubDomains";
+        #proxy_cookie_flags session_id samesite=lax secure;  # requires nginx 1.19.8
+    }
 
-  #   increase    proxy   buffer  size
-  proxy_buffers   16  64k;
-  proxy_buffer_size   128k;
+    # Redirect requests to odoo backend server
+    location / {
+        # Add Headers for odoo proxy mode
+        proxy_set_header X-Forwarded-Host $http_host;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_redirect off;
+        proxy_pass http://odoo;
 
-  proxy_read_timeout 900s;
-  proxy_connect_timeout 900s;
-  proxy_send_timeout 900s;
+        #add_header Strict-Transport-Security "max-age=31536000; includeSubDomains";
+        #proxy_cookie_flags session_id samesite=lax secure; # requires nginx 1.19.8
+    }
 
-  #   force   timeouts    if  the backend dies
-  proxy_next_upstream error   timeout invalid_header  http_500    http_502
-  http_503;
-
-  types {
-  text/less less;
-  text/scss scss;
-  }
-
-  #   enable  data    compression
-  gzip    on;
-  gzip_min_length 1100;
-  gzip_buffers    4   32k;
-  gzip_types  text/css text/scss text/less text/plain text/xml application/xml application/json application/javascript application/pdf image/jpeg image/png image/webp;
-  gzip_vary   on;
-  client_header_buffer_size 4k;
-  large_client_header_buffers 4 64k;
-  client_max_body_size 0;
-
-  location / {
-  proxy_pass http://odooserver;
-  # by default, do not forward anything
-  proxy_redirect off;
-  # proxy_cookie_path / "/; secure; HttpOnly; SameSite=None; Secure";
-  # add_header Strict-Transport-Security "max-age=31536000; includeSubDomains";
-
-  }
-
-  location /websocket {
-  proxy_pass http://odoolongpoll;
-  proxy_redirect off;
-  proxy_set_header Upgrade \$http_upgrade;
-  proxy_set_header Connection \$connection_upgrade;
-
-  }
-  location ~* .(js|css|png|jpg|jpeg|gif|ico)$ {
-  expires 2d;
-  proxy_pass http://odooserver;
-  add_header Cache-Control "public, no-transform";
-  }
-  # cache some static data in memory for 60mins.
-  location ~ /[a-zA-Z0-9_-]*/static/ {
-  proxy_cache_valid 200 302 60m;
-  proxy_cache_valid 404      1m;
-  proxy_buffering    on;
-  expires 864000;
-  proxy_pass http://odooserver;
-  }
-  }
+    # common gzip
+    gzip_types text/css text/scss text/plain text/xml application/xml application/json application/javascript;
+    gzip on;
+}
 EOF
         if [ -f "/etc/nginx/conf.d/odoo.conf" ]; then
             sudo rm /etc/nginx/conf.d/odoo.conf
@@ -358,6 +333,8 @@ EOF
         sudo mv ~/odoo.conf /etc/nginx/conf.d/
         # sudo service nginx restart
         sudo su root -c "printf 'proxy_mode = True\n' >> /etc/${OE_CONFIG}.conf"
+        sudo su root -c "printf 'workers = 1\n' >> /etc/${OE_CONFIG}.conf"
+        sudo su root -c "printf 'max_cron_threads = 1\n' >> /etc/${OE_CONFIG}.conf"
         log "INFO" "Nginx server is up and running. Configuration can be found at /etc/nginx/conf.d/odoo.conf"
     else
         log "INFO" "Nginx isn't installed due to choice of the user!"
