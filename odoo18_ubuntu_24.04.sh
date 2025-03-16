@@ -271,7 +271,7 @@ install_nginx() {
 upstream odoochat {
     server 127.0.0.1:8072;
 }
-map $http_upgrade $connection_upgrade {
+map \$http_upgrade \$connection_upgrade {
     default upgrade;
     '' close;
 }
