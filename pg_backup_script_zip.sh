@@ -67,7 +67,6 @@ zip -r $ABS_BACKUP_FILENAME $DB_DUMP_FILENAME filestore
 
 #removing dump.sql and filestores
 sudo rm $SRC_BACKUP_LOC$db_dump_filename
-sudo rm -r $SRC_FILESTORE_BAK_LOC
 
 if [ $DEST_USER != "Host_address" ] && [ $DEST_USER != "Username" ] && [ $DEST_PASS != "Password" ]; then
     # sudo apt install sshpass
