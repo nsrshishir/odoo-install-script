@@ -56,17 +56,17 @@ if test -f $SRC_FILESTORE_BAK_LOC; then
 fi
 
 #dumping database
-sudo -u $DB_USER pg_dump --no-owner --no-privileges -f $SRC_BACKUP_LOC$db_dump_filename $DB_NAME
+sudo -u $DB_USER pg_dump --no-owner --no-privileges -f $SRC_BACKUP_LOC$DB_DUMP_FILENAME $DB_NAME
 
 #Copping filestore
-cp -r $SRC_FILESTORE_LOC$db_name $SRC_FILESTORE_BAK_LOC
+cp -r $SRC_FILESTORE_LOC$DB_NAME $SRC_FILESTORE_BAK_LOC
 
 #Creating a tar.gz file with db dump and db filestores
 cd $SRC_BACKUP_LOC
 zip -r $ABS_BACKUP_FILENAME $DB_DUMP_FILENAME filestore
 
 #removing dump.sql and filestores
-sudo rm $SRC_BACKUP_LOC$db_dump_filename
+sudo rm $SRC_BACKUP_LOC$DB_DUMP_FILENAME
 
 if [ $DEST_USER != "Host_address" ] && [ $DEST_USER != "Username" ] && [ $DEST_PASS != "Password" ]; then
     # sudo apt install sshpass
