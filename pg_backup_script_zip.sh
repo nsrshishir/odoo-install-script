@@ -1,45 +1,47 @@
 #!/bin/bash
 
 #Backup Config information
-today=$(date +"%m_%d_%Y")
+TODAY=$(date +"%m_%d_%Y")
 
-#put no of days you want to save the backups for, 0 if want to save all
-daylimit=2
+#Put the number of days you want to save the backups for, 0 if you want to save all
+BACKUP_DAYS_LIMIT=2
 
 #Database information
-db_user="odoo"
-db_name="db_name"
-bkup_filename=$db_name"_backup_"$today
-db_dump_filename="dump.sql"
+DB_USER="odoo"
+OE_USER=$DB_USER
+DB_NAME="db_name"
+BACKUP_FILENAME=$DB_NAME"_backup_"$TODAY
+DB_DUMP_FILENAME="dump.sql"
 
 #Source Host information
-src_bkup_loc="/odoo/db_backup/"
-src_filestore_loc="/odoo/.local/share/Odoo/filestore/"
-abs_bkup_filename=$src_bkup_loc$bkup_filename".zip"
-src_filestore_bak_loc=$src_bkup_loc"filestore"
+SRC_BACKUP_LOC="/odoo/db_backup/"
+SRC_FILESTORE_LOC="/odoo/.local/share/Odoo/filestore/"
+ABS_BACKUP_FILENAME=$SRC_BACKUP_LOC$BACKUP_FILENAME".zip"
+SRC_FILESTORE_BAK_LOC=$SRC_BACKUP_LOC"filestore"
 
 #Destination Host information
-dest_bakeup_loc="/dest/db_backup/"
-dest_filestore=$dest_bakeup_loc$db_name"_filestore"
-dest_host="Host_address"
-dest_user="Username"
-dest_pass="Password"
+DEST_BACKUP_LOC="/dest/db_backup/"
+DEST_FILESTORE=$DEST_BACKUP_LOC$DB_NAME"_filestore"
+DEST_HOST="Host_address"
+DEST_USER="Username"
+DEST_PASS="Password"
 
 #Checking Source backup Directory, Creating one if doesnt exists
-if [ ! -d $src_bkup_loc ]; then
-    echo "Directory "$src_bkup_loc" does not exist! Creating..."
-    mkdir $src_bkup_loc
-    echo "Setting Premission 777 to "$src_bkup_loc
-    chmod 777 $src_bkup_loc
+if [ ! -d $SRC_BACKUP_LOC ]; then
+    echo "Directory "$SRC_BACKUP_LOC" does not exist! Creating..."
+    mkdir $SRC_BACKUP_LOC
+    echo "Setting correct permissions to "$SRC_BACKUP_LOC
+    chmod 750 $SRC_BACKUP_LOC
+    chown $OE_USER:$OE_USER $SRC_BACKUP_LOC
 fi
 
-if [ $daylimit -ne 0 ]; then
-    find $src_bakeup_loc -type f -mtime +$daylimit -delete
+if [ $BACKUP_DAYS_LIMIT -ne 0 ]; then
+    find $SRC_BACKUP_LOC -type f -mtime +$BACKUP_DAYS_LIMIT -delete
 fi
 
 #Checking Source backup file exist, Removing one if exists
-if test -f $abs_bkup_filename; then
-    rm $abs_bkup_filename
+if test -f $ABS_BACKUP_FILENAME; then
+    rm $ABS_BACKUP_FILENAME
 fi
 
 #Checking if zip package is installed
@@ -49,30 +51,30 @@ if ! dpkg -s zip; then
 fi
 
 #delete filestore folder if exists in source backup location if exists
-if test -f $src_filestore_bak_loc; then
-    rm -r $src_filestore_bak_loc
+if test -f $SRC_FILESTORE_BAK_LOC; then
+    rm -r $SRC_FILESTORE_BAK_LOC
 fi
 
 #dumping database
-sudo -u $db_user pg_dump --no-owner --no-privileges -f $src_bakeup_loc$db_dump_filename $db_name
+sudo -u $DB_USER pg_dump --no-owner --no-privileges -f $SRC_BACKUP_LOC$db_dump_filename $DB_NAME
 
 #Copping filestore
-cp -r $src_filestore_loc$db_name $src_filestore_bak_loc
+cp -r $SRC_FILESTORE_LOC$db_name $SRC_FILESTORE_BAK_LOC
 
 #Creating a tar.gz file with db dump and db filestores
-cd $src_bakeup_loc
-zip -r $abs_bkup_filename $db_dump_filename filestore
+cd $SRC_BACKUP_LOC
+zip -r $ABS_BACKUP_FILENAME $DB_DUMP_FILENAME filestore
 
 #removing dump.sql and filestores
-sudo rm $src_bakeup_loc$db_dump_filename
-sudo rm -r $src_filestore_bak_loc
+sudo rm $SRC_BACKUP_LOC$db_dump_filename
+sudo rm -r $SRC_FILESTORE_BAK_LOC
 
-if [ $dest_user != "Host_address" ] && [ $dest_user != "Username" ] && [ $dest_pass != "Password" ]; then
+if [ $DEST_USER != "Host_address" ] && [ $DEST_USER != "Username" ] && [ $DEST_PASS != "Password" ]; then
     # sudo apt install sshpass
     #syncing databases
-    rsync -a --delete -e "sshpass -p $dest_pass ssh -o StrictHostKeyChecking=no" $src_bakeup_loc $dest_user@$dest_host:$dest_bakeup_loc
+    rsync -a --delete -e "sshpass -p $DEST_PASS ssh -o StrictHostKeyChecking=no" $SRC_BACKUP_LOC $DEST_USER@$DEST_HOST:$DEST_BACKUP_LOC
 
     #syncing filestore
-    # rsync -a -e "sshpass -p $dest_pass ssh -o StrictHostKeyChecking=no" $src_filestore $dest_user@$dest_host:$dest_filestore
+    # rsync -a -e "sshpass -p $DEST_PASS ssh -o StrictHostKeyChecking=no" $SRC_FILESTORE $DEST_USER@$DEST_HOST:$DEST_FILESTORE
 fi
 
