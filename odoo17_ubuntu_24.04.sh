@@ -69,7 +69,7 @@ install_postgresql() {
     sudo curl https://www.postgresql.org/media/keys/ACCC4CF8.asc | gpg --dearmor | sudo tee /etc/apt/trusted.gpg.d/apt.postgresql.org.gpg >/dev/null
     sudo sh -c 'echo "deb [arch=amd64] http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
     sudo apt-get update
-    sudo apt-get install postgresql postgresql-server-dev-all postgis -y
+    sudo apt-get install postgresql-17 postgresql-server-dev-17 postgresql-contrib-17 postgis postgresql-17-postgis-3 -y
     sudo su - postgres -c "createuser -s $OE_USER" 2>/dev/null || true
 }
 
