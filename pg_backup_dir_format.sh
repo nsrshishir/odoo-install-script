@@ -50,6 +50,8 @@ fi
 # Create directory for this specific backup run
 echo "Creating directory for this backup: ${CURRENT_BACKUP_DIR}"
 mkdir -p "${CURRENT_BACKUP_DIR}"
+# Change ownership so the db user can write the dump
+chown "${DB_USER}" "${CURRENT_BACKUP_DIR}"
 
 # -----------------------------------------------------------------------------
 # Database Backup (Directory Format)
