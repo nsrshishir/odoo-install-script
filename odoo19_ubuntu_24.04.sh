@@ -35,6 +35,7 @@ LONGPOLLING_PORT="8072"
 ENABLE_SSL="False"
 ADMIN_EMAIL="odoo@example.com"
 WKHTMLTOX_X64="https://github.com/wkhtmltopdf/packaging/releases/download/0.12.6.1-2/wkhtmltox_0.12.6.1-2.jammy_amd64.deb"
+LIBSSL_JAMMY="http://archive.ubuntu.com/ubuntu/pool/main/o/openssl/libssl1.1_1.1.1f-1ubuntu2_amd64.deb"
 VENV_DIR="/$OE_USER/venv"
 
 # Logging function
@@ -57,7 +58,6 @@ trap 'handle_error $LINENO' ERR
 # Update server
 update_server() {
     log "INFO" "Updating server"
-    echo "deb http://archive.ubuntu.com/ubuntu/ noble main restricted" | sudo tee /etc/apt/sources.list.d/noble.list
     sudo apt-get update
     sudo apt-get upgrade -y
     sudo apt install curl ca-certificates gnupg2 lsb-release ubuntu-keyring -y
@@ -82,25 +82,32 @@ install_dependencies() {
 
 # Install Node.js and npm
 install_nodejs() {
-    log "INFO" "Installing Node.js 20 LTS and npm"
+    log "INFO" "Installing Node.js 20 LTS via NodeSource"
     curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
-    sudo apt-get install -y nodejs node-less
-    sudo npm install -g rtlcss
+    sudo apt-get install -y nodejs
+    sudo npm install -g less less-plugin-clean-css rtlcss
 }
 
 # Install Wkhtmltopdf
 install_wkhtmltopdf() {
     if [ "$INSTALL_WKHTMLTOPDF" = "True" ]; then
-        log "INFO" "Installing Wkhtmltopdf"
+        log "INFO" "Installing wkhtmltopdf (qt-patched) with libssl1.1 workaround for Ubuntu 24.04"
+        # Ubuntu 24.04 dropped libssl1.1; the qt-patched wkhtmltopdf jammy build requires it.
+        # We install libssl1.1 from Ubuntu 22.04 (jammy) archives as a compatibility shim.
+        sudo wget -q $LIBSSL_JAMMY -O /tmp/libssl1.1.deb
+        sudo dpkg -i /tmp/libssl1.1.deb
+        rm -f /tmp/libssl1.1.deb
+
         if [ "$(getconf LONG_BIT)" == "64" ]; then
             _url=$WKHTMLTOX_X64
         fi
-        sudo wget $_url
-        sudo gdebi --n $(basename $_url)
+        sudo wget -q $_url -O /tmp/$(basename $_url)
+        sudo dpkg -i /tmp/$(basename $_url) || sudo apt-get install -f -y
+        rm -f /tmp/$(basename $_url)
         sudo rm -f /usr/bin/wkhtmltopdf
         sudo rm -f /usr/bin/wkhtmltoimage
-        sudo ln -s /usr/local/bin/wkhtmltopdf /usr/bin
-        sudo ln -s /usr/local/bin/wkhtmltoimage /usr/bin
+        sudo ln -s /usr/local/bin/wkhtmltopdf /usr/bin/wkhtmltopdf
+        sudo ln -s /usr/local/bin/wkhtmltoimage /usr/bin/wkhtmltoimage
     else
         log "INFO" "Wkhtmltopdf isn't installed due to the choice of the user!"
     fi
@@ -110,7 +117,6 @@ install_wkhtmltopdf() {
 create_odoo_user() {
     log "INFO" "Creating Odoo system user"
     sudo adduser --system --quiet --shell=/bin/bash --home=$OE_HOME --gecos 'ODOO' --group $OE_USER
-    sudo adduser $OE_USER sudo
     if [ ! -d "/var/log/$OE_USER" ]; then
         sudo mkdir /var/log/$OE_USER
     else
@@ -149,14 +155,10 @@ install_odoo() {
             echo " Directory $OE_HOME/enterprise exists. Passing..."
         fi
 
-        # GITHUB_RESPONSE="False"
-        # while [[ $GITHUB_RESPONSE == *"Authentication"* ]]; do
-        #     log "WARNING" "Your authentication with Github has failed! Please try again."
-        #     GITHUB_RESPONSE=$(sudo git clone --depth 1 --branch $OE_VERSION https://www.github.com/odoo/enterprise "$OE_HOME/enterprise/addons" 2>&1)
-        # done
+        # Clone enterprise repo (requires Odoo enterprise subscription access):
+        # sudo git clone --depth 1 --branch $OE_VERSION https://www.github.com/odoo/enterprise "$OE_HOME/enterprise/addons"
+        # Optional connectors (firebase, google, microsoft, etc.) — install as needed:
         # sudo -u $OE_USER $VENV_DIR/bin/pip3 install num2words ofxparse dbfread ebaysdk firebase_admin pyOpenSSL
-        sudo npm install -g less
-        sudo npm install -g less-plugin-clean-css
     fi
 
     if [ ! -d "$OE_HOME/custom" ]; then
@@ -283,6 +285,7 @@ server {
     proxy_read_timeout 720s;
     proxy_connect_timeout 720s;
     proxy_send_timeout 720s;
+    client_max_body_size 200m;
 
     # log
     access_log /var/log/nginx/odoo-access.log;
@@ -310,6 +313,7 @@ server {
         proxy_set_header X-Forwarded-Proto \$scheme;
         proxy_set_header X-Real-IP \$remote_addr;
         proxy_redirect off;
+        proxy_buffering off;
         proxy_pass http://odoo;
 
         #add_header Strict-Transport-Security "max-age=31536000; includeSubDomains";
@@ -333,8 +337,9 @@ EOF
 
         sudo mv ~/odoo.conf /etc/nginx/conf.d/
         # sudo service nginx restart
+        WORKERS=$((1 * $(nproc) + 1))
         sudo su root -c "printf 'proxy_mode = True\n' >> /etc/${OE_CONFIG}.conf"
-        sudo su root -c "printf 'workers = 1\n' >> /etc/${OE_CONFIG}.conf"
+        sudo su root -c "printf 'workers = ${WORKERS}\n' >> /etc/${OE_CONFIG}.conf"
         sudo su root -c "printf 'max_cron_threads = 1\n' >> /etc/${OE_CONFIG}.conf"
         log "INFO" "Nginx server is up and running. Configuration can be found at /etc/nginx/conf.d/odoo.conf"
     else
@@ -365,14 +370,14 @@ install_logrotate() {
     fi
 
     cat <<EOF >/etc/logrotate.d/odoo
-   /var/log/${OE_USER}/${OE_CONFIG}.log {
-        daily
-        rotate 7
-        missingok
-        notifempty
-        compress
-        delaycompress
-        copytruncate
+/var/log/${OE_USER}/${OE_CONFIG}.log {
+    daily
+    rotate 7
+    missingok
+    notifempty
+    compress
+    delaycompress
+    copytruncate
 }
 EOF
 }
