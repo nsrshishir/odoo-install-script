@@ -76,15 +76,16 @@ install_postgresql() {
 # Install dependencies
 install_dependencies() {
     log "INFO" "Installing Python 3 and other dependencies"
-    sudo apt install git python3 python3-pip build-essential wget python3-dev python3-venv python3-wheel python3-cffi libssl3 libxslt1-dev libzip-dev libldap2-dev libsasl2-dev python3-setuptools libpng-dev libjpeg-dev gdebi -y
+    sudo apt install git python3 python3-pip build-essential wget python3-dev python3-venv python3-wheel python3-cffi libssl3 libxslt1-dev libzip-dev libldap2-dev libsasl2-dev libpq-dev libcairo2 python3-setuptools libpng-dev libjpeg-dev gdebi -y
     sudo apt install fonts-beng -y
 }
 
 # Install Node.js and npm
 install_nodejs() {
-    log "INFO" "Installing Node.js and npm"
-    # curl -fsSL https://deb.nodesource.com/setup_lts.x | sudo -E bash -
-    sudo apt-get install -y nodejs npm node-less
+    log "INFO" "Installing Node.js 20 LTS and npm"
+    curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+    sudo apt-get install -y nodejs node-less
+    sudo npm install -g rtlcss
 }
 
 # Install Wkhtmltopdf
@@ -137,10 +138,10 @@ install_odoo() {
     fi
 
     sudo -u $OE_USER $VENV_DIR/bin/pip3 install -r $OE_HOME_EXT/requirements.txt
+    sudo -u $OE_USER $VENV_DIR/bin/pip3 install psycopg2-binary pdfminer.six rlPyCairo
 
     if [ "$IS_ENTERPRISE" = "True" ]; then
         log "INFO" "Installing Odoo Enterprise"
-        sudo -u $OE_USER $VENV_DIR/bin/pip3 install psycopg2-binary pdfminer.six
         if [ ! -d "$OE_HOME/enterprise" ]; then
             sudo su $OE_USER -c "mkdir $OE_HOME/enterprise"
             sudo su $OE_USER -c "mkdir $OE_HOME/enterprise/addons"
