@@ -76,8 +76,8 @@ install_postgresql() {
 # Install dependencies
 install_dependencies() {
     log "INFO" "Installing Python 3 and other dependencies"
-    sudo apt install git python3 python3-pip build-essential wget python3-dev python3-venv python3-wheel python3-cffi libssl3 libxslt1-dev libzip-dev libldap2-dev libsasl2-dev libpq-dev libcairo2 python3-setuptools libpng-dev libjpeg-dev gdebi -y
-    sudo apt install fonts-beng -y
+    sudo apt install git python3 python3-pip build-essential wget python3-dev python3-venv python3-wheel python3-cffi libssl3 libxslt1-dev libzip-dev libldap2-dev libsasl2-dev libpq-dev libcairo2 python3-setuptools python3-pyinotify libpng-dev libjpeg-dev gdebi -y
+    sudo apt install fonts-beng fonts-dejavu-core fonts-font-awesome fonts-roboto-unhinted fonts-noto -y
 }
 
 # Install Node.js and npm
